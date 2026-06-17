@@ -1,0 +1,20 @@
+.info-section {
+  background-color: #424242;
+  color: white;
+
+  border-radius: 15px;
+
+}
+
+.info-title {
+  color: #2196F3;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.info-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #ccc;
+}

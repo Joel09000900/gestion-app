@@ -1,0 +1,18 @@
+# Dépendances
+node_modules/
+
+# Build de production
+/build
+
+# Variables d'environnement (valeurs en local + sur Vercel/Netlify) — ne pas committer
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs & OS
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store

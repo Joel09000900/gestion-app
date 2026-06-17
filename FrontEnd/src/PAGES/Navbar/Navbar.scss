@@ -1,0 +1,198 @@
+// ── Navbar flottante glassmorphism ──
+
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 1.2rem;
+  margin: 1rem auto;
+  width: calc(100% - 3rem);
+  max-width: 1100px;
+
+  background: rgba(12, 12, 55, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+  position: relative;
+  z-index: 100;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 15%;
+    width: 70%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(160, 140, 255, 0.5), transparent);
+    border-radius: 50%;
+  }
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+}
+
+// ── Gauche : logo + icônes ──
+.nav-left {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.nav-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.3px;
+  color: #fff;
+  margin-right: 0.4rem;
+  user-select: none;
+
+  span { color: #8b7cf8; }
+}
+
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.22s ease, border-color 0.22s ease,
+              color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+
+  &:hover {
+    background: rgba(139, 124, 248, 0.18);
+    border-color: rgba(139, 124, 248, 0.45);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(139, 124, 248, 0.28);
+  }
+}
+
+// ── Droite : boutons ──
+.nav-right {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.nav-center1{
+  
+  position:relative; 
+  display: flex;
+  gap: 14px;
+  align-items: center;
+
+          .nav-text-link{
+            text-decoration: none;
+            color: white;
+            font-weight:500;
+          }
+
+         
+           .nav-text-btn {
+          border: none;
+          background: transparent;
+          color: white;
+          cursor: pointer;
+
+          }
+      
+}
+
+// ── Profil utilisateur connecté ──
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(139, 124, 248, 0.12);
+  border: 1px solid rgba(139, 124, 248, 0.25);
+
+  &__name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  &__role {
+    font-size: 0.72rem;
+    color: rgba(139, 124, 248, 0.9);
+    background: rgba(139, 124, 248, 0.15);
+    padding: 0.1rem 0.45rem;
+    border-radius: 20px;
+    border: 1px solid rgba(139, 124, 248, 0.3);
+  }
+}
+
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.42rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.22s ease, border-color 0.22s ease,
+              transform 0.22s ease, box-shadow 0.22s ease, color 0.22s ease;
+
+  &--outline {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.8);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.35);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--fill {
+    background: linear-gradient(135deg, #4a48e8 0%, #8b7cf8 100%);
+    border: 1px solid transparent;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(74, 72, 232, 0.35);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(139, 124, 248, 0.52);
+    }
+  }
+}
+
+// ── Responsive ──
+@media (max-width: 600px) {
+  .nav-bar { width: calc(100% - 1.5rem); padding: 0.5rem 0.8rem; }
+  .nav-user__name { display: none; }
+  .nav-center1 { gap: 8px; }
+  .btn-nav { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+  .nav-logo { font-size: 0.95rem; margin-right: 0.2rem; }
+}
+
+@media (max-width: 380px) {
+  .nav-user { padding: 0.3rem 0.5rem; }
+  .nav-icon { width: 30px; height: 30px; }
+  .nav-left { gap: 0.35rem; }
+}

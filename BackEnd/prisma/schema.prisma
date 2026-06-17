@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  ENTREPRISE
+  ADMIN
+}
+
+enum StatutTicket {
+  EN_ATTENTE_VALIDATION
+  ATTENTE
+  APPELE
+  TRAITE
+  ABSENT
+}
+
+enum TypeAction {
+  EMIS
+  VALIDE
+  REFUSE
+  ACTION_APPELE
+  ACTION_TRAITE
+  ACTION_ABSENT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  nom       String
+  email     String   @unique
+  password  String
+  role      Role     @default(CLIENT)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entreprise Entreprise?
+  tickets    Ticket[]
+}
+
+model Entreprise {
+  id          String   @id @default(cuid())
+  nom         String
+  description String?
+  type        String?  // coiffure | tresseuses | pressings | lavage-auto (fixé à l'inscription)
+  lat         Float?
+  lng         Float?
+  userId      String   @unique
+  avatar      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services Service[]
+}
+
+model Service {
+  id          String @id @default(cuid())
+  nom         String
+  prefixe     String
+  icone       String @default("🏦")
+  description String @default("")
+  compteur    Int    @default(0)
+  entrepriseId String
+
+  entreprise Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  tickets    Ticket[]
+
+  @@unique([entrepriseId, prefixe])
+}
+
+model Ticket {
+  id        String       @id @default(cuid())
+  numero    String
+  statut    StatutTicket @default(ATTENTE)
+  guichet   String?
+  devant    Int          @default(0)
+  attente   Int          @default(0)
+  serviceId String
+  userId    String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  service Service  @relation(fields: [serviceId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  actions Action[]
+}
+
+model Action {
+  id        String     @id @default(cuid())
+  type      TypeAction
+  guichet   String?
+  ticketId  String
+  createdAt DateTime   @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+// npx prisma db push

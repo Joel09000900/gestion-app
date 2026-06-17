@@ -1,0 +1,182 @@
+/* ══════════════════════════════════════════════════════
+   Estimation du temps d'attente + QR Code — styles partagés (.we-)
+══════════════════════════════════════════════════════ */
+
+/* ── QR Code ── */
+.we-qr-box {
+  display: inline-flex;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+
+.we-qr-hint {
+  font-size: 0.63rem;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+  margin-top: 7px;
+  letter-spacing: 0.02em;
+}
+
+/* Ticket surligné via scan QR */
+.co-queue-row--scanned,
+.tr-queue-row--scanned,
+.pr-queue-row--scanned,
+.cl-queue-row--scanned {
+  border-color: rgba(108,99,255,0.6) !important;
+  background: rgba(108,99,255,0.12) !important;
+  animation: we-scanned-pulse 2s ease 3;
+}
+
+@keyframes we-scanned-pulse {
+  0%,100% { box-shadow: none; }
+  50%      { box-shadow: 0 0 0 3px rgba(108,99,255,0.3); }
+}
+
+
+/* ── Bloc principal ── */
+.we-estimate {
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 12px 0;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.we-estimate--now  { background: rgba(0,176,110,.12);  border-color: rgba(0,176,110,.3);  }
+.we-estimate--soon { background: rgba(245,158,11,.1);  border-color: rgba(245,158,11,.3); }
+.we-estimate--mid  { background: rgba(249,115,22,.1);  border-color: rgba(249,115,22,.3); }
+.we-estimate--wait { background: rgba(79,195,247,.08); border-color: rgba(79,195,247,.25);}
+
+/* ── Ligne de 3 métriques ── */
+.we-estimate__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.we-est-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.we-est-block__val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.we-est-block__label {
+  font-size: 0.64rem;
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.we-est-sep {
+  width: 1px;
+  height: 32px;
+  background: rgba(255,255,255,.12);
+  flex-shrink: 0;
+}
+
+/* ── Barre de progression ── */
+.we-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.we-progress__track {
+  flex: 1;
+  height: 5px;
+  background: rgba(255,255,255,.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.we-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6c63ff, #4fc3f7);
+  border-radius: 4px;
+  transition: width 0.7s cubic-bezier(.34,1.3,.64,1);
+}
+
+.we-estimate--now  .we-progress__fill { background: linear-gradient(90deg, #00b06e, #34d399); }
+.we-estimate--soon .we-progress__fill { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+.we-estimate--mid  .we-progress__fill { background: linear-gradient(90deg, #f97316, #fb923c); }
+
+.we-progress__label {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,.45);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Message d'urgence ── */
+.we-urgency-msg {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px 0;
+  letter-spacing: 0.01em;
+}
+
+.we-urgency-msg--now  { color: #34d399; }
+.we-urgency-msg--soon { color: #fcd34d; }
+.we-urgency-msg--mid  { color: #fb923c; }
+.we-urgency-msg--wait { color: #7dd3fc; }
+
+/* ── Ticket en attente de validation ── */
+.we-validation-msg {
+  background: rgba(139,92,246,.12);
+  border: 1px solid rgba(139,92,246,.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c4b5fd;
+  text-align: center;
+  animation: we-pulse-validation 2s infinite;
+}
+
+@keyframes we-pulse-validation {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.7; }
+}
+
+/* ── Ticket appelé ── */
+.we-appele-msg {
+  background: rgba(232,70,10,.15);
+  border: 1px solid rgba(232,70,10,.4);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 12px 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ff7043;
+  text-align: center;
+  line-height: 1.6;
+  animation: we-pulse-appele 1s infinite;
+}
+
+.we-appele-msg small {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255,112,67,.7);
+}
+
+@keyframes we-pulse-appele {
+  0%,100% { box-shadow: 0 0 0 0 rgba(232,70,10,.3); }
+  50%      { box-shadow: 0 0 0 8px rgba(232,70,10,0); }
+}
