@@ -75,10 +75,6 @@ export default function Acceuil() {
               </div>
             </div>
           </div>
-          <div className="ac-float-badge">
-            <span className="ac-badge-dot"/>
-            <span className="ac-badge-text">En ligne</span>
-          </div>
         </div>
 
         {/* Texte */}
@@ -147,7 +143,7 @@ export default function Acceuil() {
                   </svg>
                 </div>
                 <h3 className="ac-space-title">Espace Entreprise</h3>
-                <p className="ac-space-desc">Gérez vos services, appelez les clients et suivez les performances en direct.</p>
+                <p className="ac-space-desc">Gérez vos services, appelez les clients et suivez les performances.</p>
                 <span className="ac-space-btn ac-spbtn-entreprise">Gérer →</span>
               </Link>
             </motion.div>

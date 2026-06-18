@@ -13,7 +13,7 @@
   display: grid;
   grid-template-columns: 1fr 1.4fr;
   gap: 1.5rem;
-  max-width: 1200px;
+  max-width: 1100px;
   width: 88%;
   margin: 0 auto;
   padding: calc(80px + 1.5rem) 0 3rem;
@@ -641,5 +641,18 @@
 @keyframes cl-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+/* ── Responsive ── */
+@media (max-width: 880px) {
+  .cl-main {
+    grid-template-columns: 1fr;
+    width: 92%;
+  }
+}
+@media (max-width: 480px) {
+  .cl-main {
+    width: 94%;
+    padding-top: calc(72px + 1rem);
   }
 }/*# sourceMappingURL=DashbordClient.css.map */

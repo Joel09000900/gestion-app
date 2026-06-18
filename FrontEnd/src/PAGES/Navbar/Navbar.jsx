@@ -25,8 +25,8 @@ export default function Navbar({ onAbout }) {
 
       {onAbout && (
         <div className="nav-center1">
-          <Link to="/" className="nav-text-link">Accueil</Link>
-          <button className="nav-text-link nav-text-btn" onClick={onAbout}>À propos</button>
+          <Link to="/" className="btn-nav btn-nav--outline">Accueil</Link>
+          <button className="btn-nav btn-nav--outline" onClick={onAbout}>À propos</button>
         </div>
       )}
       <div className="nav-right">

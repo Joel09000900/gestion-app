@@ -92,28 +92,11 @@
   align-items: center;
 }
 
-.nav-center1{
-  
-  position:relative; 
+.nav-center1 {
+  position: relative;
   display: flex;
   gap: 14px;
   align-items: center;
-
-          .nav-text-link{
-            text-decoration: none;
-            color: white;
-            font-weight:500;
-          }
-
-         
-           .nav-text-btn {
-          border: none;
-          background: transparent;
-          color: white;
-          cursor: pointer;
-
-          }
-      
 }
 
 // ── Profil utilisateur connecté ──

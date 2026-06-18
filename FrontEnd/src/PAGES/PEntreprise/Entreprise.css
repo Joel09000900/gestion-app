@@ -35,7 +35,7 @@
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;
   gap: 1.5rem;
-  max-width: 1200px;
+  max-width: 1100px;
   width: 88%;
   margin: 0 auto;
   padding: calc(80px + 1.5rem) 0 3rem;
@@ -859,4 +859,95 @@
 @media (max-width: 520px) {
   .en-layout { width: 94%; }
   .en-stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Identité du client (confirmation visuelle) ── */
+.en-client {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px 7px 7px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.en-client__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(111, 163, 255, 0.55);
+  flex-shrink: 0;
+}
+.en-client__avatar--ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #1a6bff, #8a6bff);
+}
+.en-client__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+.en-client__nom {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fff;
+}
+.en-client__label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Avatar client dans la modale de validation ── */
+.en-val-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.en-val-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(111, 163, 255, 0.55);
+  flex-shrink: 0;
+}
+.en-val-avatar--ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #1a6bff, #8a6bff);
+}
+
+/* ── Avatars client : file d'attente & historique ── */
+.en-queue-item__avatar,
+.en-hist-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(111, 163, 255, 0.45);
+  flex-shrink: 0;
+}
+.en-queue-item__avatar--ph,
+.en-hist-avatar--ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #1a6bff, #8a6bff);
 }

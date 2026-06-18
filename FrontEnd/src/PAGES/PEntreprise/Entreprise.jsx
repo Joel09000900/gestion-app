@@ -93,9 +93,12 @@ function QueueItem({ ticket, index, isNext }) {
     <div className={`en-queue-item ${isNext ? "en-queue-item--next" : ""}`}>
       <div className="en-queue-item__left">
         <span className="en-queue-item__rank">#{index + 1}</span>
+        {ticket.clientAvatar
+          ? <img src={ticket.clientAvatar} alt={ticket.clientNom} className="en-queue-item__avatar" />
+          : <div className="en-queue-item__avatar en-queue-item__avatar--ph">{getInitials(ticket.clientNom)}</div>}
         <div>
           <div className="en-queue-item__numero">{ticket.numero}</div>
-          <div className="en-queue-item__service">{ticket.service}</div>
+          <div className="en-queue-item__service">{ticket.clientNom ?? "Client"} · {ticket.service}</div>
         </div>
       </div>
       <div className="en-queue-item__right">
@@ -111,8 +114,11 @@ function QueueItem({ ticket, index, isNext }) {
 function HistoriqueItem({ ticket }) {
   return (
     <div className="en-hist-item">
+      {ticket.clientAvatar
+        ? <img src={ticket.clientAvatar} alt={ticket.clientNom} className="en-hist-avatar" />
+        : <div className="en-hist-avatar en-hist-avatar--ph">{getInitials(ticket.clientNom)}</div>}
       <span className="en-hist-num">{ticket.numero}</span>
-      <span className="en-hist-service">{ticket.service}</span>
+      <span className="en-hist-service">{ticket.clientNom ?? "Client"} · {ticket.service}</span>
       <span className={`en-hist-status en-hist-status--${ticket.statut}`}>
         {ticket.statut === "traite" ? "✓ Traité" : "⊘ Absent"}
       </span>
@@ -285,13 +291,16 @@ export default function Entreprise() {
     const appeles = scoped.filter(tk => tk.statut === "APPELE");
     if (appeles.length === 0) return null;
     const t = [...appeles].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
-    return { id: t.id, numero: t.numero, service: t.service?.nom ?? "Service", since: fmtHeure(t.updatedAt) };
+    return {
+      id: t.id, numero: t.numero, service: t.service?.nom ?? "Service", since: fmtHeure(t.updatedAt),
+      clientNom: t.user?.nom, clientAvatar: t.user?.avatar,
+    };
   }, [scoped]);
 
   const queue = useMemo(
     () => scoped
       .filter(t => t.statut === "ATTENTE")
-      .map(t => ({ id: t.id, numero: t.numero, service: t.service?.nom ?? "Service", attente: `~${t.attente ?? 0} min` })),
+      .map(t => ({ id: t.id, numero: t.numero, service: t.service?.nom ?? "Service", attente: `~${t.attente ?? 0} min`, clientNom: t.user?.nom, clientAvatar: t.user?.avatar })),
     [scoped]
   );
 
@@ -299,7 +308,7 @@ export default function Entreprise() {
     () => scoped
       .filter(t => (t.statut === "TRAITE" || t.statut === "ABSENT") && !hiddenHistIds.has(t.id))
       .slice().reverse().slice(0, 20)
-      .map(t => ({ id: t.id, numero: t.numero, service: t.service?.nom ?? "Service", statut: t.statut === "TRAITE" ? "traite" : "absent", heure: fmtHeure(t.updatedAt) })),
+      .map(t => ({ id: t.id, numero: t.numero, service: t.service?.nom ?? "Service", statut: t.statut === "TRAITE" ? "traite" : "absent", heure: fmtHeure(t.updatedAt), clientNom: t.user?.nom, clientAvatar: t.user?.avatar })),
     [scoped, hiddenHistIds]
   );
 
@@ -449,7 +458,10 @@ export default function Entreprise() {
             </div>
 
             <div className="en-val-info">
-              <span>👤 {pendingValidations[0].user?.nom ?? "Client"}</span>
+              {pendingValidations[0].user?.avatar
+                ? <img src={pendingValidations[0].user.avatar} alt={pendingValidations[0].user?.nom} className="en-val-avatar" />
+                : <div className="en-val-avatar en-val-avatar--ph">{getInitials(pendingValidations[0].user?.nom)}</div>}
+              <span>{pendingValidations[0].user?.nom ?? "Client"}</span>
             </div>
 
             <div className="en-val-actions">
@@ -577,6 +589,15 @@ export default function Entreprise() {
               <>
                 <div className="en-numero" key={current.id}>{current.numero}</div>
                 <div className="en-service-txt">{current.service}</div>
+                <div className="en-client" title="Vérifiez l'identité du client">
+                  {current.clientAvatar
+                    ? <img src={current.clientAvatar} alt={current.clientNom} className="en-client__avatar" />
+                    : <div className="en-client__avatar en-client__avatar--ph">{getInitials(current.clientNom)}</div>}
+                  <div className="en-client__meta">
+                    <span className="en-client__nom">{current.clientNom ?? "Client"}</span>
+                    <span className="en-client__label">Identité du client</span>
+                  </div>
+                </div>
                 <div className="en-since">Pris en charge à {current.since}</div>
                 <div className="en-actions">
                   <motion.button className="btn-submit en-btn-next" onClick={handleNext} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>

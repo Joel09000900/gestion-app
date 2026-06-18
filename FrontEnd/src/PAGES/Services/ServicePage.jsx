@@ -326,7 +326,6 @@ export default function ServicePage({ type }) {
           <div className={`${P}-logo`}><cfg.Icon size={18} style={{ verticalAlign: "-3px", marginRight: 7 }} /><span>{cfg.title}</span></div>
           <div className={`${P}-header__right`}>
             <Link to="/DashbordClient" className={`${P}-header__dash`}>Mon dashboard →</Link>
-            <div className={`${P}-header__live`}><span className={`${P}-live-dot`} /> En direct</div>
           </div>
         </header>
 
@@ -370,10 +369,10 @@ export default function ServicePage({ type }) {
               </section>
             )}
 
-            {/* File en direct */}
+            {/* File d'attente */}
             {selectedServiceId && (
               <section className={`${P}-section`}>
-                <div className={`${P}-section__title`}>File d'attente en direct</div>
+                <div className={`${P}-section__title`}>File d'attente</div>
                 <div className={`${P}-section__subtitle`}>Synchronisé en temps réel</div>
                 <div className={`${P}-queue-list`}>
                   {queue.length === 0 && (

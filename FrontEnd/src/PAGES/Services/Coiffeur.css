@@ -57,17 +57,22 @@ button { font-family:var(--font-body); cursor:pointer; }
 ══════════════════════════════════════════════════════════ */
 .co-header {
   height: 64px;
-  padding: 0 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--co-glass);
-  backdrop-filter: var(--co-blur);
-  -webkit-backdrop-filter: var(--co-blur);
-  border-bottom: 1px solid var(--co-glass-b);
-  position: sticky;
-  top: 64px;
-  z-index: 50;
+    position: relative;
+    padding: 0 23px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--pr-glass);
+    backdrop-filter: var(--pr-blur);
+    -webkit-backdrop-filter: var(--pr-blur);
+    border-bottom: 1px solid var(--pr-glass-b);
+    position: sticky;
+    top: 64px;
+    width: 29cm;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    left: 8.1cm;
+    z-index: 50;
 }
 
 .co-logo {
@@ -79,23 +84,6 @@ button { font-family:var(--font-body); cursor:pointer; }
 }
 .co-logo span { color: var(--co-accent); }
 
-.co-header__live {
-  display: flex; align-items: center; gap: 7px;
-  font-size: .78rem; font-weight: 500; color: var(--co-success);
-  background: rgba(0,176,110,.12); border: 1px solid rgba(0,176,110,.25);
-  padding: 5px 12px; border-radius: 100px;
-}
-
-.co-live-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--co-success);
-  animation: coLive 1.5s infinite;
-}
-
-@keyframes coLive {
-  0%,100% { box-shadow:0 0 0 0 rgba(0,176,110,.4); }
-  50%      { box-shadow:0 0 0 5px rgba(0,176,110,0); }
-}
 
 /* ══════════════════════════════════════════════════════════
    MAIN — 2 colonnes

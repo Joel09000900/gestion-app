@@ -57,17 +57,22 @@ button { font-family:var(--font-body); cursor:pointer; }
 ══════════════════════════════════════════════════════════ */
 .tr-header {
   height: 64px;
-  padding: 0 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--tr-glass);
-  backdrop-filter: var(--tr-blur);
-  -webkit-backdrop-filter: var(--tr-blur);
-  border-bottom: 1px solid var(--tr-glass-b);
-  position: sticky;
-  top: 64px;
-  z-index: 50;
+    position: relative;
+    padding: 0 23px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--pr-glass);
+    backdrop-filter: var(--pr-blur);
+    -webkit-backdrop-filter: var(--pr-blur);
+    border-bottom: 1px solid var(--pr-glass-b);
+    position: sticky;
+    top: 64px;
+    width: 29cm;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    left: 8.1cm;
+    z-index: 50;
 }
 
 .tr-logo {
@@ -76,22 +81,6 @@ button { font-family:var(--font-body); cursor:pointer; }
 }
 .tr-logo span { color: var(--tr-accent); }
 
-.tr-header__live {
-  display:flex; align-items:center; gap:7px;
-  font-size:.78rem; font-weight:500; color:var(--tr-success);
-  background:rgba(0,176,110,.12); border:1px solid rgba(0,176,110,.25);
-  padding:5px 12px; border-radius:100px;
-}
-
-.tr-live-dot {
-  width:7px; height:7px; border-radius:50%;
-  background:var(--tr-success); animation:trLive 1.5s infinite;
-}
-
-@keyframes trLive {
-  0%,100% { box-shadow:0 0 0 0 rgba(0,176,110,.4); }
-  50%      { box-shadow:0 0 0 5px rgba(0,176,110,0); }
-}
 
 /* ══════════════════════════════════════════════════════════
    MAIN

@@ -124,7 +124,7 @@ button { font-family:var(--font-body); cursor:pointer; }
   -webkit-backdrop-filter:var(--ad-blur);
   margin: 2cm auto;
    top:64px; z-index:60;
-  width:57em;
+  width:68em;
   position: relative;
 }
 
@@ -150,7 +150,7 @@ button { font-family:var(--font-body); cursor:pointer; }
   display:flex; justify-content:center;
 }
 
-.ad-section { animation:secIn .3s ease both; background:#26266D; width:57em; }
+.ad-section { animation:secIn .3s ease both; background:#26266D; width:68em; }
 
 @keyframes secIn {
   from { opacity:0; transform:translateY(8px); }

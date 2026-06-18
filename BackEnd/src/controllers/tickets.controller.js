@@ -74,7 +74,7 @@ export async function tousLesTicketsAdmin(req, res) {
     const tickets = await prisma.ticket.findMany({
       include: {
         service: { select: { nom: true, icone: true, entreprise: { select: { nom: true, type: true } } } },
-        user: { select: { nom: true } },
+        user: { select: { nom: true, avatar: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
