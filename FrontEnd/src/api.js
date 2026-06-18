@@ -23,6 +23,15 @@ async function request(path, options = {}) {
   }
 
   if (!res.ok) {
+    // Token périmé/invalide sur une requête authentifiée → on purge la session
+    // et on renvoie vers la connexion plutôt que d'afficher une page vide silencieuse.
+    if (res.status === 401 && token) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (typeof window !== 'undefined' && window.location.pathname !== '/connexion') {
+        window.location.assign('/connexion');
+      }
+    }
     const message =
       data?.message ||
       (res.status === 413 ? 'Fichier trop volumineux' : null) ||

@@ -170,11 +170,12 @@ export default function PAdmin() {
   const [now, setNow] = useState("");
   const { socketRef } = useSocket();
   const [tickets, setTickets] = useState([]);
+  const [loadError, setLoadError] = useState(null);
 
   const refresh = useCallback(() => {
     return api.get("/tickets/all")
-      .then((data) => setTickets(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .then((data) => { setTickets(Array.isArray(data) ? data : []); setLoadError(null); })
+      .catch((err) => setLoadError(err.message || "Erreur de chargement des tickets"));
   }, []);
 
   // Chargement initial + temps réel (socket) + polling de secours
@@ -366,6 +367,13 @@ export default function PAdmin() {
             </button>
           </div>
         </nav>
+
+        {loadError && (
+          <div className="ad-error-banner" role="alert">
+            ⚠️ Impossible de charger les tickets : {loadError}
+            <button className="ad-error-retry" onClick={refresh}>Réessayer</button>
+          </div>
+        )}
 
         <main className="ad-main">
 
