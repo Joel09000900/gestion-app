@@ -169,7 +169,9 @@
 @media (max-width: 600px) {
   .nav-bar { width: calc(100% - 1.5rem); padding: 0.5rem 0.8rem; }
   .nav-user__name { display: none; }
-  .nav-center1 { gap: 8px; }
+  // Sur téléphone : on masque les boutons Accueil + À propos (la navbar débordait).
+  // .nav-center1 n'existe que sur la page d'accueil (prop onAbout).
+  .nav-center1 { display: none; }
   .btn-nav { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
   .nav-logo { font-size: 0.95rem; margin-right: 0.2rem; }
 }
