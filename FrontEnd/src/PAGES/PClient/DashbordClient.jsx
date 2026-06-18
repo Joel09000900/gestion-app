@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { useNavigate } from "react-router-dom";
-import { MdPhotoCamera, MdArrowForward, MdReceiptLong, MdOpenInNew, MdLocationOn, MdDeleteOutline } from "react-icons/md";
+import { MdPhotoCamera, MdArrowForward, MdReceiptLong, MdOpenInNew, MdLocationOn, MdDeleteOutline, MdWarningAmber } from "react-icons/md";
 import Navbar from "../Navbar/Navbar";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
@@ -163,7 +163,7 @@ function ActiveTicketCard({ ticket, onDelete }) {
 }
 
 export default function DashbordClient() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { socketRef } = useSocket();
   const navigate = useNavigate();
   const vantaRef = useRef(null);
@@ -173,6 +173,8 @@ export default function DashbordClient() {
   const [uploading, setUploading] = useState(false);
   const [tickets, setTickets] = useState([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const loadTickets = useCallback(() => {
     return api.get("/tickets/mes-tickets")
@@ -254,6 +256,19 @@ export default function DashbordClient() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await api.delete("/auth/compte");
+      logout();
+      navigate("/");
+    } catch (err) {
+      console.error("delete account:", err);
+      setDeletingAccount(false);
+      window.alert("Échec de la suppression du compte : " + err.message);
+    }
+  };
+
   const activeTickets = tickets.filter((t) =>
     ["EN_ATTENTE_VALIDATION", "ATTENTE", "APPELE"].includes(t.statut)
   );
@@ -317,6 +332,13 @@ export default function DashbordClient() {
             <MdArrowForward size={20} className="cl-service-link__arrow" />
           </button>
 
+          {/* Zone de danger — suppression du compte (masquée pour l'admin) */}
+          {user?.role !== "ADMIN" && (
+            <button className="cl-danger-btn" onClick={() => setShowDeleteModal(true)}>
+              <MdDeleteOutline size={16} /> Supprimer mon compte
+            </button>
+          )}
+
         </div>
 
         {/* ── Colonne droite ── */}
@@ -367,6 +389,38 @@ export default function DashbordClient() {
           </div>
         </div>
       </main>
+
+      {showDeleteModal && (
+        <div
+          className="cl-modal-overlay"
+          onClick={() => !deletingAccount && setShowDeleteModal(false)}
+        >
+          <div className="cl-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cl-modal__icon"><MdWarningAmber size={28} /></div>
+            <h3 className="cl-modal__title">Supprimer votre compte ?</h3>
+            <p className="cl-modal__text">
+              Cette action est <strong>irréversible</strong>. Votre compte, vos tickets
+              et tout votre historique seront définitivement effacés de la base de données.
+            </p>
+            <div className="cl-modal__actions">
+              <button
+                className="cl-modal__cancel"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deletingAccount}
+              >
+                Annuler
+              </button>
+              <button
+                className="cl-modal__confirm"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+              >
+                {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -94,3 +94,46 @@ export async function updateAvatar(req, res) {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
   }
 }
+
+// Suppression définitive du compte connecté (et de toutes ses données en BD).
+// Ordre imposé par les contraintes FK : on supprime d'abord les tickets
+// (Ticket.userId et Ticket.serviceId n'ont pas de ON DELETE CASCADE), puis le
+// User — dont la suppression cascade vers Entreprise → Service, et chaque
+// Ticket supprimé cascade vers ses Action.
+export async function supprimerCompte(req, res) {
+  const { id: userId, role } = req.user;
+
+  // Garde-fou : l'admin (compte unique, super-entreprise) ne peut pas s'auto-supprimer.
+  if (role === 'ADMIN') {
+    return res.status(403).json({ message: "Le compte administrateur ne peut pas être supprimé." });
+  }
+
+  try {
+    if (role === 'ENTREPRISE') {
+      const entreprise = await prisma.entreprise.findUnique({
+        where: { userId },
+        include: { services: { select: { id: true } } },
+      });
+      const serviceIds = entreprise?.services.map((s) => s.id) ?? [];
+
+      await prisma.$transaction([
+        // Tickets pris PAR ce compte + tickets reçus par ses services
+        prisma.ticket.deleteMany({
+          where: { OR: [{ userId }, { serviceId: { in: serviceIds } }] },
+        }),
+        // Supprime le user → cascade Entreprise → Services
+        prisma.user.delete({ where: { id: userId } }),
+      ]);
+    } else {
+      // CLIENT : ses tickets puis son compte
+      await prisma.$transaction([
+        prisma.ticket.deleteMany({ where: { userId } }),
+        prisma.user.delete({ where: { id: userId } }),
+      ]);
+    }
+
+    res.json({ message: 'Compte supprimé' });
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur', error: err.message });
+  }
+}

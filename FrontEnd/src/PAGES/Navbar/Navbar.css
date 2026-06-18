@@ -87,17 +87,6 @@
   gap: 14px;
   align-items: center;
 }
-.nav-center1 .nav-text-link {
-  text-decoration: none;
-  color: white;
-  font-weight: 500;
-}
-.nav-center1 .nav-text-btn {
-  border: none;
-  background: transparent;
-  color: white;
-  cursor: pointer;
-}
 
 .nav-user {
   display: flex;
@@ -155,4 +144,37 @@
 .btn-nav--fill:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 22px rgba(139, 124, 248, 0.52);
+}
+
+@media (max-width: 600px) {
+  .nav-bar {
+    width: calc(100% - 1.5rem);
+    padding: 0.5rem 0.8rem;
+  }
+  .nav-user__name {
+    display: none;
+  }
+  .nav-center1 {
+    gap: 8px;
+  }
+  .btn-nav {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+  .nav-logo {
+    font-size: 0.95rem;
+    margin-right: 0.2rem;
+  }
+}
+@media (max-width: 380px) {
+  .nav-user {
+    padding: 0.3rem 0.5rem;
+  }
+  .nav-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .nav-left {
+    gap: 0.35rem;
+  }
 }/*# sourceMappingURL=Navbar.css.map */

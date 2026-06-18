@@ -2,12 +2,12 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { motion } from "framer-motion";
-import { MdBusiness, MdPhotoCamera, MdLocationOn, MdMyLocation, MdOpenInNew, MdEdit, MdCheck, MdDeleteOutline } from "react-icons/md";
+import { MdBusiness, MdPhotoCamera, MdLocationOn, MdMyLocation, MdOpenInNew, MdEdit, MdCheck, MdDeleteOutline, MdWarningAmber } from "react-icons/md";
 import Navbar from "../Navbar/Navbar";
 import "./Entreprise.css";
 import { api } from "../../api";
 import { useAuth } from "../../context/AuthContext";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSocket } from "../../context/SocketContext";
 
 const SERVICE_LABELS = {
@@ -128,9 +128,10 @@ function HistoriqueItem({ ticket }) {
 }
 
 export default function Entreprise() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { serviceId } = useParams();
   const { socketRef } = useSocket();
+  const navigate = useNavigate();
 
   const vantaRef = useRef(null);
   const vantaInstance = useRef(null);
@@ -151,6 +152,8 @@ export default function Entreprise() {
   const fileInputRef = useRef(null);
   const [entreprise, setEntreprise] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Type = source de vérité depuis l'entreprise ; repli sur l'URL le temps du chargement.
   const typeKey = entreprise?.type ?? serviceId;
@@ -235,6 +238,19 @@ export default function Entreprise() {
       (err) => setGeo({ status: "error", lat: null, lon: null, error: err.message || "Position indisponible." }),
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await api.delete("/auth/compte");
+      logout();
+      navigate("/");
+    } catch (err) {
+      console.error("delete account:", err);
+      setDeletingAccount(false);
+      window.alert("Échec de la suppression du compte : " + err.message);
+    }
   };
 
   const nomEntreprise = entreprise?.nom ?? user?.nom ?? "Mon entreprise";
@@ -553,6 +569,22 @@ export default function Entreprise() {
             {geo.status === "idle" && <p className="en-geo-card__hint">Autorisez la géolocalisation pour afficher votre position.</p>}
           </div>
 
+          {/* ── Zone de danger : suppression du compte (masquée pour l'admin) ── */}
+          {!isAdmin && (
+            <div className="en-glass-card en-danger-card">
+              <div className="en-danger-card__head">
+                <MdWarningAmber size={17} />
+                <span>Zone de danger</span>
+              </div>
+              <p className="en-danger-card__text">
+                Supprimer définitivement votre entreprise, ses services et tous ses tickets.
+              </p>
+              <button className="en-danger-card__btn" onClick={() => setShowDeleteModal(true)}>
+                <MdDeleteOutline size={15} /> Supprimer mon compte
+              </button>
+            </div>
+          )}
+
           <div className="en-glass-card en-agent-header">
             <motion.div
               className="en-orb"
@@ -704,6 +736,38 @@ export default function Entreprise() {
         </motion.div>
 
       </div>
+
+      {showDeleteModal && (
+        <div
+          className="en-modal-overlay"
+          onClick={() => !deletingAccount && setShowDeleteModal(false)}
+        >
+          <div className="en-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="en-modal__icon"><MdWarningAmber size={28} /></div>
+            <h3 className="en-modal__title">Supprimer votre compte ?</h3>
+            <p className="en-modal__text">
+              Cette action est <strong>irréversible</strong>. Votre entreprise, ses services
+              et tous les tickets associés seront définitivement effacés de la base de données.
+            </p>
+            <div className="en-modal__actions">
+              <button
+                className="en-modal__cancel"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deletingAccount}
+              >
+                Annuler
+              </button>
+              <button
+                className="en-modal__confirm"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+              >
+                {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
