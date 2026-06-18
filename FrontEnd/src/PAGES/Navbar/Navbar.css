@@ -155,7 +155,7 @@
     display: none;
   }
   .nav-center1 {
-    gap: 8px;
+    display: none;
   }
   .btn-nav {
     padding: 0.4rem 0.8rem;
