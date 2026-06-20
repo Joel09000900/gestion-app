@@ -643,6 +643,149 @@
     transform: rotate(360deg);
   }
 }
+/* ── Zone de danger : suppression du compte ── */
+.cl-danger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 0.2rem;
+  padding: 11px 16px;
+  background: rgba(229, 57, 53, 0.08);
+  border: 1px solid rgba(229, 57, 53, 0.35);
+  border-radius: 12px;
+  color: #ff6b6b;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cl-danger-btn:hover {
+  background: rgba(229, 57, 53, 0.16);
+  border-color: rgba(229, 57, 53, 0.6);
+}
+
+/* ── Modale de confirmation ── */
+.cl-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  background: rgba(8, 8, 35, 0.62);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: cl-fade 0.18s ease;
+}
+
+@keyframes cl-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.cl-modal {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem 1.8rem 1.6rem;
+  background: rgba(18, 18, 64, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  animation: cl-rise 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cl-modal__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  background: rgba(229, 57, 53, 0.15);
+  color: #ff6b6b;
+}
+
+.cl-modal__title {
+  margin: 0 0 0.6rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cl-modal__text {
+  margin: 0 0 1.6rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cl-modal__text strong {
+  color: #ff8a8a;
+}
+
+.cl-modal__actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.cl-modal__cancel,
+.cl-modal__confirm {
+  flex: 1;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cl-modal__cancel {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cl-modal__cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.cl-modal__confirm {
+  background: linear-gradient(135deg, #e53935, #ff6b6b);
+  border: none;
+  color: #fff;
+}
+
+.cl-modal__confirm:hover:not(:disabled) {
+  box-shadow: 0 8px 22px rgba(229, 57, 53, 0.5);
+}
+
+.cl-modal__cancel:disabled,
+.cl-modal__confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ── Responsive ── */
 @media (max-width: 880px) {
   .cl-main {
