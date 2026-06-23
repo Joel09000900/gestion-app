@@ -19,18 +19,23 @@ export async function inscription(req, res) {
     return res.status(400).json({ message: 'Tous les champs sont requis' });
   }
 
+  const emailTrim = String(email).trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+    return res.status(400).json({ message: 'Adresse email invalide' });
+  }
+
   const isEntreprise = role.toUpperCase() === 'ENTREPRISE';
   if (isEntreprise && !SERVICE_TYPES.includes(type)) {
     return res.status(400).json({ message: 'Type de service invalide ou manquant' });
   }
 
   try {
-    const exists = await prisma.user.findUnique({ where: { email } });
+    const exists = await prisma.user.findUnique({ where: { email: emailTrim } });
     if (exists) return res.status(409).json({ message: 'Email déjà utilisé' });
 
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { nom, email, password: hash, role: role.toUpperCase() },
+      data: { nom, email: emailTrim, password: hash, role: role.toUpperCase() },
       select: { id: true, nom: true, email: true, role: true },
     });
 

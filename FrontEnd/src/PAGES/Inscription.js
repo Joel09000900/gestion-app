@@ -13,6 +13,8 @@ import { MdLocalLaundryService } from 'react-icons/md';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 
+/* Email valide : du texte, un @, un domaine, un point, une extension. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Inscription() {
   const { login } = useAuth();
@@ -61,6 +63,12 @@ function Inscription() {
 
   const isActive = (field) => focusedField === field || !!formData[field];
 
+  /* ── Validité du formulaire ── */
+  const emailValide      = EMAIL_RE.test(formData.email.trim());
+  const tousChampsRemplis = formData.nom.trim() !== '' && formData.email.trim() !== '' && formData.password.trim() !== '';
+  const serviceChoisi    = role !== 'entreprise' || !!serviceType;
+  const peutSoumettre    = tousChampsRemplis && emailValide && serviceChoisi;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -72,10 +80,18 @@ function Inscription() {
       setErreur('Veuillez choisir votre type de service.');
       return;
     }
+    if (!tousChampsRemplis) {
+      setErreur('Veuillez remplir tous les champs.');
+      return;
+    }
+    if (!emailValide) {
+      setErreur('Veuillez saisir une adresse email valide (avec « @ »).');
+      return;
+    }
     setIsLoading(true);
     setErreur(null);
     try {
-      const payload = { ...formData, role };
+      const payload = { ...formData, email: formData.email.trim(), nom: formData.nom.trim(), role };
       if (role === 'entreprise') payload.type = serviceType;
       const data = await api.post('/auth/inscription', payload);
       login(data.token, data.user);
@@ -279,6 +295,12 @@ function Inscription() {
                   <span className="field-line" />
                 </motion.div>
 
+                {formData.email.trim() !== '' && !emailValide && (
+                  <span style={{ color: '#ff6b6b', fontSize: '.78rem', marginTop: '-6px', marginBottom: '2px' }}>
+                    Adresse email invalide — elle doit contenir « @ » et un domaine.
+                  </span>
+                )}
+
                 <motion.div className={`field-group ${isActive('password') ? 'active' : ''}`} variants={item(0.44)} initial="hidden" animate="visible">
                   <AiOutlineLock className="field-icon" size={17} />
                   <input type="password" id="password" name="password" value={formData.password} onChange={handleChange}
@@ -290,10 +312,10 @@ function Inscription() {
                 <motion.button
                   type="submit"
                   className={`btn-submit ${isLoading ? 'loading' : ''} ${submitted ? 'success' : ''}`}
-                  disabled={isLoading || submitted}
+                  disabled={isLoading || submitted || !peutSoumettre}
                   variants={item(0.48)} initial="hidden" animate="visible"
-                  whileHover={!isLoading && !submitted ? { scale: 1.03 } : {}}
-                  whileTap={!isLoading && !submitted ? { scale: 0.97 } : {}}
+                  whileHover={!isLoading && !submitted && peutSoumettre ? { scale: 1.03 } : {}}
+                  whileTap={!isLoading && !submitted && peutSoumettre ? { scale: 0.97 } : {}}
                 >
                   <AnimatePresence mode="wait">
                     {isLoading  && <motion.span key="spinner" className="spinner" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} />}
