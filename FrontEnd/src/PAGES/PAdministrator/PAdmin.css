@@ -277,7 +277,7 @@ button { font-family:var(--font-body); cursor:pointer; }
    TABLEAU TICKETS
 ══════════════════════════════════════════════════════════ */
 .ad-tickets-list-header {
-  display:grid; grid-template-columns:80px 1fr 60px 100px 60px;
+  display:grid; grid-template-columns:80px 1fr 1fr 60px 100px 60px;
   gap:12px; padding:8px 12px;
   background:rgba(255,255,255,.06); border-radius:var(--radius-sm);
   margin-bottom:6px; font-size:.68rem;
@@ -287,7 +287,7 @@ button { font-family:var(--font-body); cursor:pointer; }
 .ad-tickets-list { display:flex; flex-direction:column; gap:4px; }
 
 .ad-ticket-row {
-  display:grid; grid-template-columns:80px 1fr 60px 100px 60px;
+  display:grid; grid-template-columns:80px 1fr 1fr 60px 100px 60px;
   gap:12px; align-items:center; padding:12px;
   border-radius:var(--radius-sm);
   border:1px solid var(--ad-glass-b);
@@ -303,6 +303,7 @@ button { font-family:var(--font-body); cursor:pointer; }
 }
 
 .ad-ticket-num { font-family:var(--font-display); font-weight:800; font-size:.9rem; letter-spacing:-0.3px; color:#fff; }
+.ad-ticket-client { font-weight:600; font-size:.78rem; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ad-ticket-service { color:var(--ad-muted); font-size:.78rem; }
 .ad-ticket-agent   { font-weight:600; font-size:.78rem; color:#fff; }
 
@@ -609,7 +610,7 @@ button { font-family:var(--font-body); cursor:pointer; }
   .ad-kpi-row     { grid-template-columns:1fr 1fr; }
   .ad-agents-grid { grid-template-columns:1fr; }
   .ad-tickets-list-header { display:none; }
-  .ad-ticket-row  { grid-template-columns:70px 1fr 80px 50px; }
+  .ad-ticket-row  { grid-template-columns:70px 1fr 70px 80px 50px; }
   .ad-ticket-service { display:none; }
 }
 

@@ -153,6 +153,7 @@ function TicketRow({ ticket }) {
   return (
     <div className="ad-ticket-row">
       <span className="ad-ticket-num">{ticket.numero}</span>
+      <span className="ad-ticket-client">{ticket.user?.nom ?? "—"}</span>
       <span className="ad-ticket-service">{ticket.service?.nom ?? "—"}</span>
       <span className="ad-ticket-agent">{ticket.service?.entreprise?.nom ?? "—"}</span>
       <span className={`ad-ticket-statut ad-ticket-statut--${meta.cls}`}>{meta.text}</span>
@@ -438,7 +439,7 @@ export default function PAdmin() {
                 ) : (
                   <>
                     <div className="ad-tickets-list-header">
-                      <span>Numéro</span><span>Service</span><span>Source</span><span>Statut</span><span>Heure</span>
+                      <span>Numéro</span><span>Client</span><span>Service</span><span>Source</span><span>Statut</span><span>Heure</span>
                     </div>
                     <div className="ad-tickets-list">
                       {recentTickets.map((t) => <TicketRow key={t.id} ticket={t} />)}
@@ -571,7 +572,7 @@ export default function PAdmin() {
                 ) : (
                   <>
                     <div className="ad-tickets-list-header">
-                      <span>Numéro</span><span>Service</span><span>Source</span><span>Statut</span><span>Heure</span>
+                      <span>Numéro</span><span>Client</span><span>Service</span><span>Source</span><span>Statut</span><span>Heure</span>
                     </div>
                     <div className="ad-tickets-list">
                       {[...tickets].reverse().map((t) => <TicketRow key={t.id} ticket={t} />)}
