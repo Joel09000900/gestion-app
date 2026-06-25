@@ -2,20 +2,45 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { motion } from "framer-motion";
-import { MdBusiness, MdPhotoCamera, MdLocationOn, MdMyLocation, MdOpenInNew, MdEdit, MdCheck, MdDeleteOutline, MdWarningAmber } from "react-icons/md";
+import { MdPhotoCamera, MdLocationOn, MdMyLocation, MdOpenInNew, MdEdit, MdCheck, MdDeleteOutline, MdWarningAmber } from "react-icons/md";
 import Navbar from "../Navbar/Navbar";
 import "./Entreprise.css";
 import { api } from "../../api";
 import { useAuth } from "../../context/AuthContext";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSocket } from "../../context/SocketContext";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
-const SERVICE_LABELS = {
-  coiffure:      "Coiffure / Barber",
-  tresseuses:    "Tresseuses",
-  pressings:     "Pressings",
-  "lavage-auto": "Lavage Automobile",
-};
+// Fix des icônes Leaflet sous Webpack/CRA (sinon le marqueur n'apparaît pas).
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+// Centre par défaut quand aucune position n'est connue (Abidjan).
+const DEFAULT_CENTER = { lat: 5.34812, lon: -4.01266 };
+
+// Capte les clics sur la carte pour (re)positionner le marqueur.
+function MapClickHandler({ onPick }) {
+  useMapEvents({ click(e) { onPick(e.latlng.lat, e.latlng.lng); } });
+  return null;
+}
+
+// Recentre la vue quand `trigger` change (ex. après une géoloc GPS).
+function RecenterMap({ lat, lon, trigger }) {
+  const map = useMap();
+  useEffect(() => {
+    if (lat != null && lon != null) map.setView([lat, lon], map.getZoom());
+  }, [trigger]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
 
 const PAGE_KEY_MAP = {
   coiffure:      "coiffeur",
@@ -142,7 +167,7 @@ export default function Entreprise() {
     guichet: "Guichet 01",
     color: "linear-gradient(135deg, #1a6bff, #6fa3ff)",
   });
-  const [agentStatus, setAgentStatus] = useState("active");
+  const [agentStatus] = useState("active"); // toujours "active" : bandeau Pause retiré (secteur informel)
   const [elapsed, setElapsed] = useState(0);
   const [activeTab, setActiveTab] = useState("queue");
   const [notification, setNotification] = useState(null);
@@ -157,11 +182,13 @@ export default function Entreprise() {
 
   // Type = source de vérité depuis l'entreprise ; repli sur l'URL le temps du chargement.
   const typeKey = entreprise?.type ?? serviceId;
-  const serviceLabel = SERVICE_LABELS[typeKey] ?? "Service Entreprise";
   const pageKey = PAGE_KEY_MAP[typeKey] ?? null;
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState("");
   const [geo, setGeo] = useState({ status: "idle", lat: null, lon: null, error: null });
+  const [markerPos, setMarkerPos] = useState(null); // position en cours d'édition { lat, lon }
+  const [savingPos, setSavingPos] = useState(false);
+  const [recenter, setRecenter]   = useState(0);     // bump → recentre la carte
 
   useEffect(() => {
     let alive = true;
@@ -171,6 +198,7 @@ export default function Entreprise() {
         setDescDraft(data.description ?? "");
         if (data.lat && data.lng) {
           setGeo({ status: "success", lat: data.lat, lon: data.lng, error: null });
+          setMarkerPos({ lat: data.lat, lon: data.lng });
         }
       }
     }).catch(() => {});
@@ -231,6 +259,8 @@ export default function Entreprise() {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         setGeo({ status: "success", lat, lon, error: null });
+        setMarkerPos({ lat, lon });
+        setRecenter((c) => c + 1);
         try {
           await api.patch("/entreprises/profil", { lat, lng: lon });
         } catch (err) { console.error(err); }
@@ -238,6 +268,20 @@ export default function Entreprise() {
       (err) => setGeo({ status: "error", lat: null, lon: null, error: err.message || "Position indisponible." }),
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  };
+
+  // Position choisie manuellement (clic sur la carte ou drag du marqueur).
+  const handlePickOnMap = (lat, lon) => setMarkerPos({ lat, lon });
+
+  // Enregistre la position du marqueur en base.
+  const handleSavePosition = async () => {
+    if (!markerPos) return;
+    setSavingPos(true);
+    try {
+      await api.patch("/entreprises/profil", { lat: markerPos.lat, lng: markerPos.lon });
+      setGeo({ status: "success", lat: markerPos.lat, lon: markerPos.lon, error: null });
+    } catch (err) { console.error(err); }
+    finally { setSavingPos(false); }
   };
 
   const handleDeleteAccount = async () => {
@@ -255,10 +299,11 @@ export default function Entreprise() {
 
   const nomEntreprise = entreprise?.nom ?? user?.nom ?? "Mon entreprise";
   const avatar = entreprise?.avatar ?? null;
-  const { lat, lon } = geo;
-  const mapSrc = geo.status === "success"
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.01},${lat-0.01},${lon+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lon}`
-    : null;
+  const mapCenter = markerPos
+    ? [markerPos.lat, markerPos.lon]
+    : [DEFAULT_CENTER.lat, DEFAULT_CENTER.lon];
+  // La position du marqueur diffère-t-elle de celle enregistrée en base ?
+  const positionModifiee = markerPos && (markerPos.lat !== geo.lat || markerPos.lon !== geo.lon);
 
   // ── Source des tickets ──
   // Admin = super-entreprise : reçoit TOUS les tickets (toutes entreprises) via /tickets/all.
@@ -551,22 +596,60 @@ export default function Entreprise() {
             </div>
             <button className="en-geo-card__btn" onClick={handleLocate} disabled={geo.status === "loading"}>
               <MdMyLocation size={15} />
-              {geo.status === "loading" ? "Localisation en cours…" : "Localiser mon entreprise"}
+              {geo.status === "loading" ? "Localisation en cours…" : "Localiser mon entreprise (GPS)"}
             </button>
             {geo.status === "error" && <div className="en-geo-card__error">{geo.error}</div>}
-            {geo.status === "success" && (
+
+            <p className="en-geo-card__hint">
+              Ou cliquez sur la carte / déplacez le marqueur pour définir votre position manuellement.
+            </p>
+
+            <MapContainer
+              center={mapCenter}
+              zoom={15}
+              scrollWheelZoom={false}
+              className="en-geo-card__map"
+              style={{ height: 220, width: "100%", borderRadius: 12 }}
+            >
+              <TileLayer
+                attribution='&copy; OpenStreetMap'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <MapClickHandler onPick={handlePickOnMap} />
+              <RecenterMap lat={markerPos?.lat} lon={markerPos?.lon} trigger={recenter} />
+              {markerPos && (
+                <Marker
+                  position={[markerPos.lat, markerPos.lon]}
+                  draggable
+                  eventHandlers={{
+                    dragend: (e) => {
+                      const m = e.target.getLatLng();
+                      setMarkerPos({ lat: m.lat, lon: m.lng });
+                    },
+                  }}
+                />
+              )}
+            </MapContainer>
+
+            {markerPos && (
               <div className="en-geo-card__result">
                 <div className="en-geo-card__coords">
-                  <span>Lat. {lat.toFixed(5)}</span>
-                  <span>Lon. {lon.toFixed(5)}</span>
+                  <span>Lat. {markerPos.lat.toFixed(5)}</span>
+                  <span>Lon. {markerPos.lon.toFixed(5)}</span>
                 </div>
-                <iframe title="Carte" className="en-geo-card__map" src={mapSrc} loading="lazy" />
-                <button className="en-geo-card__gmaps" onClick={() => window.open(`https://www.google.com/maps?q=${lat},${lon}`, "_blank")}>
+                <button
+                  className="en-geo-card__btn"
+                  onClick={handleSavePosition}
+                  disabled={savingPos || !positionModifiee}
+                >
+                  <MdCheck size={15} />
+                  {savingPos ? "Enregistrement…" : positionModifiee ? "Enregistrer cette position" : "Position enregistrée ✓"}
+                </button>
+                <button className="en-geo-card__gmaps" onClick={() => window.open(`https://www.google.com/maps?q=${markerPos.lat},${markerPos.lon}`, "_blank")}>
                   <MdOpenInNew size={14} /> Voir sur Google Maps
                 </button>
               </div>
             )}
-            {geo.status === "idle" && <p className="en-geo-card__hint">Autorisez la géolocalisation pour afficher votre position.</p>}
           </div>
 
           {/* ── Zone de danger : suppression du compte (masquée pour l'admin) ── */}
@@ -584,26 +667,6 @@ export default function Entreprise() {
               </button>
             </div>
           )}
-
-          <div className="en-glass-card en-agent-header">
-            <motion.div
-              className="en-orb"
-              animate={{ boxShadow: ["0 0 16px rgba(111,163,255,0.35)", "0 0 36px rgba(111,163,255,0.75)", "0 0 16px rgba(111,163,255,0.35)"] }}
-              transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
-            >
-              <MdBusiness size={26} color="#fff" />
-            </motion.div>
-            <div className="en-agent-header__info">
-              <h2 className="gc-title" style={{ fontSize: "1.3rem" }}>Espace Entreprise</h2>
-              <p className="gc-subtitle">{agent.guichet} · {serviceLabel}</p>
-            </div>
-            <button
-              className={`en-pause-btn ${agentStatus === "pause" ? "en-pause-btn--active" : ""}`}
-              onClick={() => setAgentStatus((s) => s === "active" ? "pause" : "active")}
-            >
-              {agentStatus === "active" ? "⏸ Pause" : "▶ Reprendre"}
-            </button>
-          </div>
 
           <div className="en-glass-card en-current-card">
             <div className="en-current-card__bg-circle" />
