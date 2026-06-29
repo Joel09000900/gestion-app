@@ -7,7 +7,7 @@ import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUser, AiOutlineMail, AiOutlineUserAdd, AiOutlineIdcard, AiOutlineShop, AiOutlineLock } from 'react-icons/ai';
-import { FaCut, FaCar } from 'react-icons/fa';
+import { FaCut, FaCar, FaBuilding } from 'react-icons/fa';
 import { GiComb } from 'react-icons/gi';
 import { MdLocalLaundryService } from 'react-icons/md';
 import { api } from '../api';
@@ -109,6 +109,7 @@ function Inscription() {
     { id: 'tresseuses',  label: 'Tresseuses',        Icon: GiComb },
     { id: 'pressings',   label: 'Pressings',         Icon: MdLocalLaundryService },
     { id: 'lavage-auto', label: 'Lavage Auto',       Icon: FaCar },
+    { id: 'residence',   label: 'Résidence',         Icon: FaBuilding },
   ];
 
   /* ── Variants Framer Motion ── */

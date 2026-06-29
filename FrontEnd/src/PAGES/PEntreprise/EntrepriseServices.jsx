@@ -6,7 +6,7 @@ import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaCut, FaCar } from 'react-icons/fa';
+import { FaCut, FaCar, FaBuilding } from 'react-icons/fa';
 import { GiComb } from 'react-icons/gi';
 import { MdLocalLaundryService } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +17,7 @@ const SERVICES = [
   { id: 'tresseuses',  icon: <GiComb size={26} color="#fff" />,                title: 'Tresseuses',        desc: 'Gérer la file tresseuses',   orbGradient: 'linear-gradient(135deg, #c4336e 0%, #f07ab0 100%)', glowColor: 'rgba(240,122,176,0.75)' },
   { id: 'pressings',   icon: <MdLocalLaundryService size={28} color="#fff" />, title: 'Pressings',         desc: 'Gérer la file pressings',    orbGradient: 'linear-gradient(135deg, #1a8fa8 0%, #5de0d8 100%)', glowColor: 'rgba(93,224,216,0.75)' },
   { id: 'lavage-auto', icon: <FaCar size={26} color="#fff" />,                 title: 'Lavage Automobile', desc: 'Gérer la file lavage auto',  orbGradient: 'linear-gradient(135deg, #1a8f4a 0%, #4ecb71 100%)', glowColor: 'rgba(78,203,113,0.75)' },
+  { id: 'residence',   icon: <FaBuilding size={26} color="#fff" />,            title: 'Résidence',         desc: 'Gérer la file résidence',    orbGradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)', glowColor: 'rgba(245,158,11,0.75)' },
 ];
 
 const cardVariant = (delay) => ({

@@ -6,7 +6,7 @@ import { QRCodeSVG } from "qrcode.react";
 import Navbar from "../Navbar/Navbar";
 import { useSocket } from "../../context/SocketContext";
 import { api } from "../../api";
-import { FaCut, FaCar, FaChild, FaPalette, FaPumpSoap, FaTshirt, FaSprayCan } from "react-icons/fa";
+import { FaCut, FaCar, FaChild, FaPalette, FaPumpSoap, FaTshirt, FaSprayCan, FaBuilding, FaHome, FaFileAlt, FaClipboardList, FaFileSignature } from "react-icons/fa";
 import { GiComb, GiHairStrands } from "react-icons/gi";
 import { MdLocalLaundryService, MdStorefront, MdIron, MdDryCleaning, MdLocalCarWash, MdCleaningServices } from "react-icons/md";
 
@@ -38,6 +38,10 @@ const SERVICE_ICONS = {
   "Lavage complet": FaCar,
   "Nettoyage intérieur": MdCleaningServices,
   "Polish & lustrage": FaSprayCan,
+  "Visite de logement": FaHome,
+  "Dépôt de dossier": FaFileAlt,
+  "État des lieux": FaClipboardList,
+  "Signature de bail": FaFileSignature,
 };
 
 // Config par type. `prefix` = préfixe des classes CSS (co/tr/pr/la), identiques par ailleurs.
@@ -47,6 +51,7 @@ const CONFIG = {
   tresseuses:    { prefix: "tr", Icon: GiComb,               title: "Tresseuses",         noun: "atelier de tresses" },
   pressings:     { prefix: "pr", Icon: MdLocalLaundryService, title: "Pressing",          noun: "pressing" },
   "lavage-auto": { prefix: "la", Icon: FaCar,                title: "Lavage Automobile",  noun: "centre de lavage" },
+  residence:     { prefix: "re", Icon: FaBuilding,          title: "Résidence",          noun: "agence immobilière" },
 };
 
 // Statuts DB (majuscules) → libellé + classe CSS (suffixes en minuscules)

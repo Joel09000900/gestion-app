@@ -7,7 +7,7 @@ import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaCut, FaCar } from 'react-icons/fa';
+import { FaCut, FaCar, FaBuilding } from 'react-icons/fa';
 import { GiComb } from 'react-icons/gi';
 import { MdLocalLaundryService } from 'react-icons/md';
 
@@ -43,6 +43,14 @@ const SERVICES = [
     desc: 'Nettoyage & lustrage de véhicules',
     orbGradient: 'linear-gradient(135deg, #1a8f4a 0%, #4ecb71 100%)',
     glowColor: 'rgba(78,203,113,0.75)',
+  },
+  {
+    id: 'residence',
+    icon: <FaBuilding size={26} color="#fff" />,
+    title: 'Résidence',
+    desc: 'Logement & démarches immobilières',
+    orbGradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
+    glowColor: 'rgba(245,158,11,0.75)',
   },
 ];
 

@@ -20,6 +20,7 @@ import Coiffeur from './PAGES/Services/Coiffeur';
 import Tresseuses from './PAGES/Services/Tresseuses';
 import Pressing from './PAGES/Services/Pressing';
 import LavageAuto from './PAGES/Services/LavageAuto';
+import Residence from './PAGES/Services/Residence';
 
 function App() {
   const [splashDone, setSplashDone] = useState(false);
@@ -62,6 +63,9 @@ function App() {
         } />
         <Route path="/service/lavage-auto" element={
           <PrivateRoute roles={['CLIENT', 'ADMIN']}><LavageAuto /></PrivateRoute>
+        } />
+        <Route path="/service/residence" element={
+          <PrivateRoute roles={['CLIENT', 'ADMIN']}><Residence /></PrivateRoute>
         } />
 
         {/* Routes ENTREPRISE uniquement */}

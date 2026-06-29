@@ -47,6 +47,7 @@ const PAGE_KEY_MAP = {
   tresseuses:    "tresseuses",
   pressings:     "pressing",
   "lavage-auto": "lavage-auto",
+  residence:     "residence",
 };
 
 const SERVICES_BY_PAGE = {
@@ -71,6 +72,12 @@ const SERVICES_BY_PAGE = {
     { nom: "Lavage complet",      prefixe: "B", icone: "✨", description: "Extérieur + intérieur soigné" },
     { nom: "Nettoyage intérieur", prefixe: "C", icone: "🧹", description: "Aspiration, sièges & tapis" },
     { nom: "Polish & lustrage",   prefixe: "D", icone: "💎", description: "Brillance & protection carrosserie" },
+  ],
+  residence: [
+    { nom: "Visite de logement", prefixe: "A", icone: "🏠", description: "Visite guidée d'un bien à louer ou acheter" },
+    { nom: "Dépôt de dossier",   prefixe: "B", icone: "📄", description: "Constitution et dépôt de dossier locataire" },
+    { nom: "État des lieux",     prefixe: "C", icone: "📋", description: "État des lieux d'entrée ou de sortie" },
+    { nom: "Signature de bail",  prefixe: "D", icone: "✍️", description: "Signature du contrat de bail" },
   ],
 };
 
