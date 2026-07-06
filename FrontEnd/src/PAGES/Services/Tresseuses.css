@@ -57,22 +57,20 @@ button { font-family:var(--font-body); cursor:pointer; }
 ══════════════════════════════════════════════════════════ */
 .tr-header {
   height: 64px;
-    position: relative;
-    padding: 0 23px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--pr-glass);
-    backdrop-filter: var(--pr-blur);
-    -webkit-backdrop-filter: var(--pr-blur);
-    border-bottom: 1px solid var(--pr-glass-b);
-    position: sticky;
-    top: 64px;
-    width: 29cm;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    left: 6.7cm;
-    z-index: 50;
+  padding: 0 23px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--tr-glass);
+  backdrop-filter: var(--tr-blur);
+  -webkit-backdrop-filter: var(--tr-blur);
+  border: 1px solid var(--tr-glass-b);
+  border-radius: 16px;
+  margin: 0 auto;
+  width: calc(100% - 3rem);
+  max-width: 1100px;
+  position: relative;
+  z-index: 50;
 }
 
 .tr-logo {
@@ -305,7 +303,7 @@ button { font-family:var(--font-body); cursor:pointer; }
   .tr-main { grid-template-columns:1fr; width:92%; padding:20px 16px; }
   .tr-col-right { position:static; }
   .tr-services-grid { grid-template-columns:1fr 1fr; }
-  .tr-header { padding:0 16px; }
+  .tr-header { padding:0 16px; width:calc(100% - 1.5rem); }
 }
 
 @media (max-width:520px) {
