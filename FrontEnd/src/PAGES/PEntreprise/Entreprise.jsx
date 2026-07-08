@@ -57,7 +57,7 @@ const SERVICES_BY_PAGE = {
     { nom: "Coloration",   prefixe: "C", icone: "🎨", description: "Couleur, mèches, balayage" },
   ],
   tresseuses: [
-    { nom: "Tresses simples",    prefixe: "A", icone: "🪮", description: "Tresses droites et nattes classiques" },
+    { nom: "Tresses simples",    prefixe: "A", icone: "💇", description: "Tresses droites et nattes classiques" },
     { nom: "Tresses africaines", prefixe: "B", icone: "👑", description: "Box braids, knotless, collées" },
     { nom: "Entretien tresses",  prefixe: "C", icone: "✨", description: "Réparation, nettoyage, démêlage" },
   ],
@@ -69,7 +69,7 @@ const SERVICES_BY_PAGE = {
   ],
   "lavage-auto": [
     { nom: "Lavage extérieur",    prefixe: "A", icone: "🚿", description: "Carrosserie, jantes & vitres" },
-    { nom: "Lavage complet",      prefixe: "B", icone: "🫧", description: "Extérieur + intérieur soigné" },
+    { nom: "Lavage complet",      prefixe: "B", icone: "🧽", description: "Extérieur + intérieur soigné" },
     { nom: "Nettoyage intérieur", prefixe: "C", icone: "🧹", description: "Aspiration, sièges & tapis" },
     { nom: "Polish & lustrage",   prefixe: "D", icone: "💎", description: "Brillance & protection carrosserie" },
   ],
