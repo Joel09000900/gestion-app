@@ -12,15 +12,24 @@ import { MdLocalLaundryService, MdStorefront } from "react-icons/md";
 
 const AVG_MIN = 7;
 
-// Prix catalogue (FCFA) par nom de service. Tresseuses non tarifées (non demandé).
+// Prix catalogue (FCFA) par nom de service. Un nombre = prix fixe, [min, max] = fourchette.
 const PRICES = {
   // Coiffure
   "Coupe homme": 2000, "Coupe enfant": 1000, "Coloration": 5000,
+  // Tresseuses
+  "Défrissage": [3000, 5000], "Tresses": [8000, 15000], "Tissage": 5000, "Mèche longue": 15000,
   // Pressing (valeurs par défaut — ajustables ici)
   "Lavage express": 1500, "Lavage normal": 2500, "Repassage": 1000, "Nettoyage sec": 4000,
   // Lavage auto
   "Lavage extérieur": 2000, "Lavage complet": 4000, "Nettoyage intérieur": 3000, "Polish & lustrage": 8000,
 };
+
+function fmtPrix(prix) {
+  if (prix == null) return null;
+  return Array.isArray(prix)
+    ? `${prix[0].toLocaleString()} – ${prix[1].toLocaleString()} F`
+    : `${prix.toLocaleString()} F`;
+}
 
 // Config par type. `prefix` = préfixe des classes CSS (co/tr/pr/la), identiques par ailleurs.
 // La feuille de style correspondante est importée par la page enveloppe.
@@ -70,13 +79,13 @@ function ServiceCard({ P, service, selected, onClick }) {
   const enAttente = service._count?.tickets ?? 0;
   const attente = enAttente * AVG_MIN;
   const level = enAttente <= 2 ? "low" : enAttente <= 4 ? "mid" : "high";
-  const prix = PRICES[service.nom];
+  const prix = fmtPrix(PRICES[service.nom]);
   return (
     <button className={`${P}-service-card ${selected ? `${P}-service-card--selected` : ""}`} onClick={onClick}>
       <div className={`${P}-service-card__icon`}>{service.icone}</div>
       <div className={`${P}-service-card__nom`}>{service.nom}</div>
       <div className={`${P}-service-card__desc`}>{service.description}</div>
-      {prix != null && <div className={`${P}-service-card__prix`}>{prix.toLocaleString()} F</div>}
+      {prix != null && <div className={`${P}-service-card__prix`}>{prix}</div>}
       <div className={`${P}-service-card__footer`}>
         <span className={`${P}-wait-badge ${P}-wait-badge--${level}`}>~{attente} min</span>
         <span className={`${P}-service-card__count`}>{enAttente} en att.</span>
@@ -121,7 +130,7 @@ function TicketEmis({ P, type, ticket, service, estimate, onReset }) {
       </div>
       <div className={`${P}-ticket-emis__numero`}>{ticket.numero}</div>
       <div className={`${P}-ticket-emis__service`}>{service?.icone} {service?.nom}</div>
-      {PRICES[service?.nom] != null && <div className={`${P}-ticket-emis__prix`}>{PRICES[service?.nom].toLocaleString()} F</div>}
+      {fmtPrix(PRICES[service?.nom]) != null && <div className={`${P}-ticket-emis__prix`}>{fmtPrix(PRICES[service?.nom])}</div>}
 
       {e.kind === "validation" ? (
         <div className="we-validation-msg">⏳ En attente de validation par l'entreprise…</div>

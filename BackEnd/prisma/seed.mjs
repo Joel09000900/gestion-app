@@ -43,9 +43,10 @@ if (joj) {
 if (jojo8) {
   await prisma.service.createMany({
     data: [
-      { nom: 'Tresses simples',    prefixe: 'A', icone: '🪮', description: 'Tresses droites et nattes classiques', entrepriseId: jojo8.id },
-      { nom: 'Tresses africaines', prefixe: 'B', icone: '🌺', description: 'Box braids, knotless, collées',         entrepriseId: jojo8.id },
-      { nom: 'Entretien tresses',  prefixe: 'C', icone: '✨', description: 'Réparation, nettoyage, démêlage',       entrepriseId: jojo8.id },
+      { nom: 'Défrissage',   prefixe: 'A', icone: '💆', description: 'Lissage et défrisage professionnel',     entrepriseId: jojo8.id },
+      { nom: 'Tresses',      prefixe: 'B', icone: '👑', description: 'Box braids, cornrows, twists sur mesure', entrepriseId: jojo8.id },
+      { nom: 'Tissage',      prefixe: 'C', icone: '🧵', description: 'Pose de tissage cousu ou clipsé',         entrepriseId: jojo8.id },
+      { nom: 'Mèche longue', prefixe: 'D', icone: '📏', description: 'Rajout de mèches longues, effet volume',  entrepriseId: jojo8.id },
     ],
     skipDuplicates: true,
   });

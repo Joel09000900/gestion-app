@@ -57,9 +57,10 @@ const SERVICES_BY_PAGE = {
     { nom: "Coloration",   prefixe: "C", icone: "🎨", description: "Couleur, mèches, balayage" },
   ],
   tresseuses: [
-    { nom: "Tresses simples",    prefixe: "A", icone: "💇", description: "Tresses droites et nattes classiques" },
-    { nom: "Tresses africaines", prefixe: "B", icone: "👑", description: "Box braids, knotless, collées" },
-    { nom: "Entretien tresses",  prefixe: "C", icone: "✨", description: "Réparation, nettoyage, démêlage" },
+    { nom: "Défrissage",   prefixe: "A", icone: "💆", description: "Lissage et défrisage professionnel" },
+    { nom: "Tresses",      prefixe: "B", icone: "👑", description: "Box braids, cornrows, twists sur mesure" },
+    { nom: "Tissage",      prefixe: "C", icone: "🧵", description: "Pose de tissage cousu ou clipsé" },
+    { nom: "Mèche longue", prefixe: "D", icone: "📏", description: "Rajout de mèches longues, effet volume" },
   ],
   pressing: [
     { nom: "Lavage express", prefixe: "A", icone: "⚡", description: "Lavage rapide en 30 minutes" },
