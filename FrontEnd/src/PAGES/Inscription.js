@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineUser, AiOutlineMail, AiOutlineUserAdd, AiOutlineIdcard, AiOutlineShop, AiOutlineLock } from 'react-icons/ai';
+import { AiOutlineUser, AiOutlineMail, AiOutlineUserAdd, AiOutlineIdcard, AiOutlineShop, AiOutlineLock, AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { FaCut, FaCar, FaBuilding } from 'react-icons/fa';
 import { GiComb } from 'react-icons/gi';
 import { MdLocalLaundryService } from 'react-icons/md';
@@ -56,6 +56,7 @@ function Inscription() {
 
   /* ── État du formulaire ── */
   const [formData, setFormData] = useState({ nom: '', email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [isLoading, setIsLoading]       = useState(false);
   const [submitted, setSubmitted]       = useState(false);
@@ -219,7 +220,7 @@ function Inscription() {
             >
               {/* Badge rôle + retour */}
               <motion.div className="role-badge-row" variants={item(0.1)} initial="hidden" animate="visible">
-                <button className="role-back-btn" onClick={() => { setRole(null); setServiceType(null); setSubmitted(false); setFormData({ nom: '', email: '', password: '' }); }}>← Retour</button>
+                <button className="role-back-btn" onClick={() => { setRole(null); setServiceType(null); setSubmitted(false); setFormData({ nom: '', email: '', password: '' }); setShowPassword(false); }}>← Retour</button>
                 <span className="role-badge">
                   {role === 'client' ? <><AiOutlineIdcard size={13} /> Client</> : <><AiOutlineShop size={13} /> Entreprise</>}
                 </span>
@@ -304,10 +305,21 @@ function Inscription() {
 
                 <motion.div className={`field-group ${isActive('password') ? 'active' : ''}`} variants={item(0.44)} initial="hidden" animate="visible">
                   <AiOutlineLock className="field-icon" size={17} />
-                  <input type="password" id="password" name="password" value={formData.password} onChange={handleChange}
+                  <input type={showPassword ? 'text' : 'password'} id="password" name="password" value={formData.password} onChange={handleChange}
                     onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField(null)} autoComplete="new-password" required />
                   <label htmlFor="password">Mot de passe</label>
                   <span className="field-line" />
+                  <button
+                    type="button"
+                    className="pw-toggle"
+                    onClick={() => setShowPassword(v => !v)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  >
+                    {showPassword
+                      ? <AiOutlineEyeInvisible size={18} />
+                      : <AiOutlineEye size={18} />}
+                  </button>
                 </motion.div>
 
                 <motion.button
