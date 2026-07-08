@@ -6,9 +6,9 @@ import { QRCodeSVG } from "qrcode.react";
 import Navbar from "../Navbar/Navbar";
 import { useSocket } from "../../context/SocketContext";
 import { api } from "../../api";
-import { FaCut, FaCar, FaChild, FaPalette, FaPumpSoap, FaTshirt, FaSprayCan, FaBuilding, FaHome, FaFileAlt, FaClipboardList, FaFileSignature } from "react-icons/fa";
-import { GiComb, GiHairStrands } from "react-icons/gi";
-import { MdLocalLaundryService, MdStorefront, MdIron, MdDryCleaning, MdLocalCarWash, MdCleaningServices } from "react-icons/md";
+import { FaCut, FaCar, FaBuilding } from "react-icons/fa";
+import { GiComb } from "react-icons/gi";
+import { MdLocalLaundryService, MdStorefront } from "react-icons/md";
 
 const AVG_MIN = 7;
 
@@ -20,28 +20,6 @@ const PRICES = {
   "Lavage express": 1500, "Lavage normal": 2500, "Repassage": 1000, "Nettoyage sec": 4000,
   // Lavage auto
   "Lavage extérieur": 2000, "Lavage complet": 4000, "Nettoyage intérieur": 3000, "Polish & lustrage": 8000,
-};
-
-// Icône vectorielle par service (fallback : l'emoji DB si non mappé)
-const SERVICE_ICONS = {
-  "Coupe homme": FaCut,
-  "Coupe enfant": FaChild,
-  "Coloration": FaPalette,
-  "Tresses simples": GiComb,
-  "Tresses africaines": GiHairStrands,
-  "Entretien tresses": FaPumpSoap,
-  "Lavage express": FaTshirt,
-  "Lavage normal": MdLocalLaundryService,
-  "Repassage": MdIron,
-  "Nettoyage sec": MdDryCleaning,
-  "Lavage extérieur": MdLocalCarWash,
-  "Lavage complet": FaCar,
-  "Nettoyage intérieur": MdCleaningServices,
-  "Polish & lustrage": FaSprayCan,
-  "Visite de logement": FaHome,
-  "Dépôt de dossier": FaFileAlt,
-  "État des lieux": FaClipboardList,
-  "Signature de bail": FaFileSignature,
 };
 
 // Config par type. `prefix` = préfixe des classes CSS (co/tr/pr/la), identiques par ailleurs.
@@ -93,10 +71,9 @@ function ServiceCard({ P, service, selected, onClick }) {
   const attente = enAttente * AVG_MIN;
   const level = enAttente <= 2 ? "low" : enAttente <= 4 ? "mid" : "high";
   const prix = PRICES[service.nom];
-  const Icon = SERVICE_ICONS[service.nom];
   return (
     <button className={`${P}-service-card ${selected ? `${P}-service-card--selected` : ""}`} onClick={onClick}>
-      <div className={`${P}-service-card__icon`}>{Icon ? <Icon size={26} /> : service.icone}</div>
+      <div className={`${P}-service-card__icon`}>{service.icone}</div>
       <div className={`${P}-service-card__nom`}>{service.nom}</div>
       <div className={`${P}-service-card__desc`}>{service.description}</div>
       {prix != null && <div className={`${P}-service-card__prix`}>{prix.toLocaleString()} F</div>}
@@ -132,7 +109,6 @@ function TicketEmis({ P, type, ticket, service, estimate, onReset }) {
   }, []);
 
   const e = estimate ?? { kind: "wait", position: ticket.devant ?? 0, minutes: ticket.attente ?? 0, urgency: "wait", total: 0, heurePassage: "—" };
-  const SvcIcon = SERVICE_ICONS[service?.nom];
 
   return (
     <div className={`${P}-ticket-emis`}>
@@ -144,7 +120,7 @@ function TicketEmis({ P, type, ticket, service, estimate, onReset }) {
         </span>
       </div>
       <div className={`${P}-ticket-emis__numero`}>{ticket.numero}</div>
-      <div className={`${P}-ticket-emis__service`}>{SvcIcon ? <SvcIcon size={16} style={{ verticalAlign: "-3px", marginRight: 5 }} /> : service?.icone} {service?.nom}</div>
+      <div className={`${P}-ticket-emis__service`}>{service?.icone} {service?.nom}</div>
       {PRICES[service?.nom] != null && <div className={`${P}-ticket-emis__prix`}>{PRICES[service?.nom].toLocaleString()} F</div>}
 
       {e.kind === "validation" ? (
