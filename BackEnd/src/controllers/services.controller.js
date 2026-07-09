@@ -1,6 +1,12 @@
 import { PrismaClient } from '@prisma/client';
+import { SERVICES_BY_TYPE } from '../data/servicesCatalog.js';
 
 const prisma = new PrismaClient();
+
+export async function catalogueParType(req, res) {
+  const { type } = req.params;
+  res.json(SERVICES_BY_TYPE[type] ?? []);
+}
 
 export async function tousLesServices(req, res) {
   try {

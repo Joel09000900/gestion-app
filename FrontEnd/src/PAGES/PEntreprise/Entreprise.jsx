@@ -42,46 +42,6 @@ function RecenterMap({ lat, lon, trigger }) {
   return null;
 }
 
-const PAGE_KEY_MAP = {
-  coiffure:      "coiffeur",
-  tresseuses:    "tresseuses",
-  pressings:     "pressing",
-  "lavage-auto": "lavage-auto",
-  residence:     "residence",
-};
-
-const SERVICES_BY_PAGE = {
-  coiffeur: [
-    { nom: "Coupe homme",  prefixe: "A", icone: "💈", description: "Coupe classique, dégradé, barbe" },
-    { nom: "Coupe enfant", prefixe: "B", icone: "🧒", description: "Coupe adaptée aux plus petits" },
-    { nom: "Coloration",   prefixe: "C", icone: "🎨", description: "Couleur, mèches, balayage" },
-  ],
-  tresseuses: [
-    { nom: "Défrissage",   prefixe: "A", icone: "💆", description: "Lissage et défrisage professionnel" },
-    { nom: "Tresses",      prefixe: "B", icone: "👑", description: "Box braids, cornrows, twists sur mesure" },
-    { nom: "Tissage",      prefixe: "C", icone: "🧵", description: "Pose de tissage cousu ou clipsé" },
-    { nom: "Mèche longue", prefixe: "D", icone: "📏", description: "Rajout de mèches longues, effet volume" },
-  ],
-  pressing: [
-    { nom: "Lavage express", prefixe: "A", icone: "⚡", description: "Lavage rapide en 30 minutes" },
-    { nom: "Lavage normal",  prefixe: "B", icone: "🧺", description: "Lavage complet et soigneux" },
-    { nom: "Repassage",      prefixe: "C", icone: "♨️", description: "Repassage professionnel à la vapeur" },
-    { nom: "Nettoyage sec",  prefixe: "D", icone: "🧴", description: "Nettoyage délicat pour vêtements fragiles" },
-  ],
-  "lavage-auto": [
-    { nom: "Lavage extérieur",    prefixe: "A", icone: "🚿", description: "Carrosserie, jantes & vitres" },
-    { nom: "Lavage complet",      prefixe: "B", icone: "🧽", description: "Extérieur + intérieur soigné" },
-    { nom: "Nettoyage intérieur", prefixe: "C", icone: "🧹", description: "Aspiration, sièges & tapis" },
-    { nom: "Polish & lustrage",   prefixe: "D", icone: "💎", description: "Brillance & protection carrosserie" },
-  ],
-  residence: [
-    { nom: "Visite de logement", prefixe: "A", icone: "🏠", description: "Visite guidée d'un bien à louer ou acheter" },
-    { nom: "Dépôt de dossier",   prefixe: "B", icone: "📁", description: "Constitution et dépôt de dossier locataire" },
-    { nom: "État des lieux",     prefixe: "C", icone: "📋", description: "État des lieux d'entrée ou de sortie" },
-    { nom: "Signature de bail",  prefixe: "D", icone: "✍️", description: "Signature du contrat de bail" },
-  ],
-};
-
 function resizeImage(file, maxSize = 256) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -190,7 +150,7 @@ export default function Entreprise() {
 
   // Type = source de vérité depuis l'entreprise ; repli sur l'URL le temps du chargement.
   const typeKey = entreprise?.type ?? serviceId;
-  const pageKey = PAGE_KEY_MAP[typeKey] ?? null;
+  const [catalogue, setCatalogue] = useState([]);
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState("");
   const [geo, setGeo] = useState({ status: "idle", lat: null, lon: null, error: null });
@@ -213,28 +173,33 @@ export default function Entreprise() {
     return () => { alive = false; };
   }, []);
 
+  // Catalogue des services de ce type, tenu par le backend (source unique — pas de copie locale).
+  useEffect(() => {
+    if (!typeKey) return;
+    api.get(`/services/catalogue/${typeKey}`)
+      .then((data) => setCatalogue(Array.isArray(data) ? data : []))
+      .catch(() => setCatalogue([]));
+  }, [typeKey]);
+
   // Auto-création des services DB au premier accès à une page de service.
-  // Garde par page (ref) pour ne pas re-POSTer à chaque rendu ; après création,
+  // Garde par type (ref) pour ne pas re-POSTer à chaque rendu ; après création,
   // on refetch l'entreprise afin que `entreprise.services` ne reste pas périmé.
   const ensuredPagesRef = useRef(new Set());
   useEffect(() => {
-    if (!pageKey || !entreprise) return;
-    if (ensuredPagesRef.current.has(pageKey)) return;
-
-    const needed = SERVICES_BY_PAGE[pageKey] ?? [];
-    if (needed.length === 0) return;
+    if (!typeKey || !entreprise || catalogue.length === 0) return;
+    if (ensuredPagesRef.current.has(typeKey)) return;
 
     const existingPrefixes = new Set((entreprise.services ?? []).map((s) => s.prefixe));
-    const missing = needed.filter((svc) => !existingPrefixes.has(svc.prefixe));
+    const missing = catalogue.filter((svc) => !existingPrefixes.has(svc.prefixe));
 
-    ensuredPagesRef.current.add(pageKey); // marqué traité avant l'async → pas de double envoi
+    ensuredPagesRef.current.add(typeKey); // marqué traité avant l'async → pas de double envoi
     if (missing.length === 0) return;
 
     Promise.all(missing.map((svc) => api.post("/services", svc).catch(() => null)))
       .then(() => api.get("/entreprises/moi"))
       .then((data) => { if (data) setEntreprise(data); })
       .catch(() => {});
-  }, [pageKey, entreprise]);
+  }, [typeKey, entreprise, catalogue]);
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
@@ -340,11 +305,11 @@ export default function Entreprise() {
     };
   }, [refreshTickets, socketRef]);
 
-  // Périmètre : services de la page courante (sinon tous les tickets de l'entreprise)
+  // Périmètre : services du type courant (sinon tous les tickets de l'entreprise)
   const scoped = useMemo(() => {
-    const names = pageKey ? new Set((SERVICES_BY_PAGE[pageKey] ?? []).map(s => s.nom)) : null;
+    const names = catalogue.length > 0 ? new Set(catalogue.map(s => s.nom)) : null;
     return names ? dbTickets.filter(t => names.has(t.service?.nom)) : dbTickets;
-  }, [dbTickets, pageKey]);
+  }, [dbTickets, catalogue]);
 
   const fmtHeure = (v) => {
     const d = new Date(v);
