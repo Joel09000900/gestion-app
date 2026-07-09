@@ -1,513 +1,245 @@
 # Rapport Technique — Projet Jeloft (Système de File d'Attente)
 
-**Date** : 28 mai 2026  
-**Stack** : React · Node.js · Express · Prisma · Neon (PostgreSQL)
+**Mise à jour** : 8 juillet 2026
+**Stack** : React 18 · Node.js/Express · Prisma · Neon (PostgreSQL) · Socket.io · Framer Motion · Vanta.js
 
 ---
 
-## 1. Architecture Générale
+## 1. Vue d'ensemble
+
+Jeloft est une application de gestion de file d'attente pour commerces de proximité (coiffure, tresses, pressing, lavage auto, agences immobilières). Un client prend un ticket numéroté pour un service précis ; l'entreprise gère sa file en temps réel (appel, traitement, absence).
 
 ```
 jojo/
-├── FrontEnd/          ← Application React (port 3000)
-├── BackEnd/           ← API REST Node/Express (port 5000)
+├── FrontEnd/   ← SPA React (Vercel, port 3000 en dev)
+├── BackEnd/    ← API REST + WebSocket (Render, port 5000 en dev)
 └── RAPPORT_TECHNIQUE.md
 ```
+
+**Base de données et temps réel sont la seule source de vérité** : chaque écran (client, entreprise, admin) lit l'état via l'API REST puis se synchronise en direct via Socket.io. Il n'existe plus de state local (`localStorage`/Context) faisant office de source de vérité.
 
 ### Schéma de communication
 
 ```
 Navigateur (React)
-      │
-      │  HTTP/REST (fetch + JWT)
-      ▼
+   │  HTTP/REST (fetch + JWT)         │  WebSocket (socket.io-client)
+   ▼                                  ▼
 API Express  ──── Prisma ORM ──── Neon PostgreSQL (cloud)
-(localhost:5000)
+      │
+      └── Socket.io : relaie les événements ticket:* à tous les clients connectés
 ```
+
+Détail du déploiement (Vercel/Render/Neon, variables d'environnement, CORS) : voir `DEPLOIEMENT.md`.
 
 ---
 
-## 2. Problèmes résolus en début de session
+## 2. Modèle de données (Prisma)
 
-### 2.1 package.json manquant (FrontEnd)
-**Problème** : `npm error ENOENT: no such file or directory, package.json`  
-**Cause** : Le fichier `package.json` avait été supprimé. Seul le dossier `node_modules` existait avec un lock file vide.  
-**Solution** : Recréation manuelle du `package.json` avec les dépendances détectées depuis le code source.
+```
+User
+├── id, nom, email (unique), password (bcrypt), avatar?
+├── role : CLIENT | ENTREPRISE | ADMIN
+└── entreprise? (1-1) · tickets (1-N)
 
-### 2.2 Dépendances manquantes
-**Problème** : `Module not found: Can't resolve 'three' / 'vanta' / 'framer-motion' / 'react-icons' / 'sass'`  
-**Solution** : Installation des dépendances manquantes :
-```bash
-npm install three vanta framer-motion react-icons sass
+Entreprise
+├── id, nom, description?, type? (coiffure | tresseuses | pressings | lavage-auto | residence)
+├── lat/lng (position sur carte), avatar?
+├── userId (FK User, unique, onDelete: Cascade)
+└── services (1-N)
+
+Service
+├── id, nom, prefixe (A/B/C…), icone (emoji), description, compteur (Int)
+├── entrepriseId (FK Entreprise, onDelete: Cascade)
+├── tickets (1-N)
+└── @@unique([entrepriseId, prefixe])
+
+Ticket
+├── id, numero (ex. "A-7"), statut, guichet?, devant (Int), attente (Int, minutes)
+├── serviceId (FK Service — pas de cascade, un service avec tickets est protégé)
+├── userId (FK User)
+└── actions (1-N, historique)
+
+Action
+├── id, type, guichet?, ticketId (FK Ticket, onDelete: Cascade), createdAt
 ```
 
-### 2.3 Conflit ESLint / node_modules corrompu
-**Problème** : Webpack mélange les chemins `frontend` (minuscules) et `FrontEnd` (majuscules) à cause d'une installation incohérente sur Windows.  
-**Solution** : Suppression complète de `node_modules` et réinstallation propre depuis zéro. Ajout de `.env` avec `DISABLE_ESLINT_PLUGIN=true`.
+**Énumérations**
+```
+Role         : CLIENT | ENTREPRISE | ADMIN
+StatutTicket : EN_ATTENTE_VALIDATION | ATTENTE | APPELE | TRAITE | ABSENT
+TypeAction   : EMIS | VALIDE | REFUSE | ACTION_APPELE | ACTION_TRAITE | ACTION_ABSENT
+```
+
+`compteur` sur `Service` est incrémenté atomiquement à chaque ticket pris (`prisma.service.update({ data: { compteur: { increment: 1 } } })`) : le numéro (`{prefixe}-{compteur}`) est unique et monotone, jamais réutilisé même si un ticket est supprimé.
 
 ---
 
-## 3. Mise en place du Backend
+## 3. Catalogue de services
 
-### 3.1 Structure créée
+Le catalogue (nom, préfixe, emoji, description par type d'entreprise) est défini **une seule fois** : `BackEnd/src/data/servicesCatalog.js` (`SERVICES_BY_TYPE`).
+
+- À l'inscription d'une entreprise (`auth.controller.js`), ses services sont créés en base à partir de ce catalogue (`services: { create: SERVICES_BY_TYPE[type] }`).
+- Le dashboard entreprise (`Entreprise.jsx`) ne détient plus sa propre copie : il récupère le catalogue via `GET /api/services/catalogue/:type` (route publique) et l'utilise pour compléter automatiquement les services manquants d'un compte existant (ex. après un ajout de service au catalogue).
+- Les prix affichés côté client (`ServicePage.jsx`, objet `PRICES`) restent une donnée front séparée — le modèle `Service` n'a pas de champ prix en base. Un prix peut être fixe (`5000`) ou une fourchette (`[3000, 5000]`), affiché via `fmtPrix()`.
+
+Modifier un service existant en base après un changement de catalogue nécessite un script ponctuel (voir `BackEnd/sync-service-icons.js` et `BackEnd/migrate-tresseuses-services.js` comme exemples) : le catalogue ne réécrit jamais les lignes déjà créées.
+
+---
+
+## 4. Authentification & rôles
+
+JWT (7 jours), payload `{ id, role }`, signé avec `JWT_SECRET`.
+
+| Route | Méthode | Auth | Description |
+|---|---|---|---|
+| `/api/auth/inscription` | POST | Non | Crée un compte (`CLIENT` ou `ENTREPRISE` + `type`) |
+| `/api/auth/connexion` | POST | Non | Retourne `{ token, user }` |
+| `/api/auth/me` | GET | JWT | Profil connecté |
+| `/api/auth/avatar` | PATCH | JWT | Met à jour l'avatar (base64) |
+| `/api/auth/compte` | DELETE | JWT | Suppression définitive du compte + données liées |
+
+Le rôle `ADMIN` ne peut pas être créé depuis le formulaire d'inscription — voir `prisma/seed.js` (compte admin par défaut, à changer après la première connexion).
+
+⚠️ **Point de vigilance non corrigé** : `auth.controller.js` fait `role: role.toUpperCase()` sans whitelist stricte sur les valeurs acceptées avant insertion. Un appel direct à l'API avec `"role":"admin"` peut créer un compte `ADMIN`. Priorité P0 pour une prochaine session.
+
+### Protection des routes front — `PrivateRoute.jsx`
+
+```jsx
+<Route path="/Entreprise" element={
+  <PrivateRoute roles={['ENTREPRISE', 'ADMIN']}><Entreprise /></PrivateRoute>
+} />
+```
+
+| Route | Non connecté | CLIENT | ENTREPRISE | ADMIN |
+|---|:---:|:---:|:---:|:---:|
+| `/`, `/inscription`, `/connexion` | ✅ | ✅ | ✅ | ✅ |
+| `/Client`, `/DashbordClient`, `/service/*` | ❌ | ✅ | ❌ | ✅ |
+| `/Entreprise`, `/EntrepriseAccueil`, `/EntrepriseServices` | ❌ | ❌ | ✅ | ✅ |
+| `/Administrateur` | ❌ | ❌ | ❌ | ✅ |
+
+Un rôle non autorisé est redirigé vers son propre espace (pas une erreur 403 générique) ; un utilisateur non connecté est redirigé vers `/connexion`.
+
+---
+
+## 5. Flux ticket
+
+```
+Client : POST /api/tickets { serviceId }
+  → statut initial EN_ATTENTE_VALIDATION, numero = "{prefixe}-{compteur}"
+  → socket.emit("ticket:nouveau", ticket)   (émis côté client après succès API)
+
+Entreprise : PATCH /api/tickets/:id/valider  → statut ATTENTE
+             PATCH /api/tickets/:id/refuser  → statut ABSENT
+             PATCH /api/tickets/:id/appeler  { guichet } → statut APPELE
+             PATCH /api/tickets/:id/terminer { statut: TRAITE | ABSENT }
+```
+
+Chaque transition écrit une `Action` (historique). `GET /api/tickets/file/:serviceId` (public, sans auth) renvoie la file active (`ATTENTE`/`APPELE`) d'un service — c'est ce que consomme la page client pour afficher la position en direct.
+
+---
+
+## 6. Temps réel — Socket.io
+
+`BackEnd/src/socket.js` : une seule salle globale (`jeloft:queue`). Un client qui se connecte rejoint la salle (`join:queue`) ; le token JWT est optionnel côté socket (accès anonyme autorisé pour la file publique).
+
+**Le serveur ne déclenche aucun événement lui-même** : il **relaie** les événements émis par un client vers tous les autres membres de la salle (`socket.to('jeloft:queue').emit(event, data)`), après que l'appel REST correspondant a réussi côté émetteur.
+
+```
+ticket:nouveau · ticket:valide · ticket:refuse
+ticket:appele  · ticket:traite · ticket:absent
+```
+
+Les pages `ServicePage.jsx` (client) et `Entreprise.jsx` s'abonnent à ces événements pour rafraîchir file/stats sans recharger la page, avec un polling de secours (10s) en complément.
+
+---
+
+## 7. Structure du backend
 
 ```
 BackEnd/
 ├── prisma/
-│   └── schema.prisma          ← Modèles de données
+│   ├── schema.prisma
+│   ├── seed.js          ← compte ADMIN par défaut (idempotent)
+│   └── seed.mjs         ← données de démo (3 entreprises + services)
 ├── src/
-│   ├── index.js               ← Point d'entrée (port 5000)
-│   ├── app.js                 ← Express + CORS
-│   ├── middlewares/
-│   │   └── auth.middleware.js ← Vérification JWT + rôles
-│   ├── controllers/
-│   │   ├── auth.controller.js
-│   │   ├── tickets.controller.js
-│   │   ├── services.controller.js
-│   │   └── entreprises.controller.js
-│   └── routes/
-│       ├── auth.routes.js
-│       ├── tickets.routes.js
-│       ├── services.routes.js
-│       └── entreprises.routes.js
-├── .env                       ← DATABASE_URL + JWT_SECRET
-├── .gitignore
-└── package.json
+│   ├── index.js         ← point d'entrée HTTP + init Socket.io
+│   ├── socket.js         ← relais d'événements temps réel
+│   ├── app.js            ← Express + CORS
+│   ├── data/
+│   │   └── servicesCatalog.js  ← catalogue de services, source unique
+│   ├── middlewares/auth.middleware.js
+│   ├── controllers/ (auth, tickets, services, entreprises)
+│   └── routes/      (auth, tickets, services, entreprises)
+├── reset-password.js               ← utilitaire admin (réinitialise un mot de passe)
+├── sync-service-icons.js           ← resynchronise icone/nom des services existants
+└── migrate-tresseuses-services.js  ← exemple de migration de catalogue en place
 ```
 
-### 3.2 Dépendances backend
+### Endpoints principaux
 
-| Package | Rôle |
-|---------|------|
-| `express` | Serveur HTTP |
-| `@prisma/client` | ORM pour PostgreSQL |
-| `bcryptjs` | Hachage des mots de passe |
-| `jsonwebtoken` | Authentification JWT |
-| `cors` | Autoriser les requêtes du frontend |
-| `dotenv` | Variables d'environnement |
-
-### 3.3 Connexion à Neon (PostgreSQL cloud)
-
-1. Renseigner l'URL dans `BackEnd/.env` :
-   ```
-   DATABASE_URL="postgresql://user:password@ep-xxx.neon.tech/neondb?sslmode=require"
-   JWT_SECRET="votre_secret"
-   PORT=5000
-   ```
-2. Pousser le schéma vers la base :
-   ```bash
-   npm run db:push
-   ```
-3. Générer le client Prisma :
-   ```bash
-   npm run db:generate
-   ```
+| Ressource | Route | Méthode | Auth |
+|---|---|---|---|
+| Services | `/api/services` | GET | Non |
+| | `/api/services/catalogue/:type` | GET | Non |
+| | `/api/services/:entrepriseId` | GET | Non |
+| | `/api/services` | POST | JWT (ENTREPRISE) |
+| | `/api/services/:id` | DELETE | JWT (ENTREPRISE/ADMIN) |
+| Entreprises | `/api/entreprises?type=` | GET | Non |
+| | `/api/entreprises/moi` | GET | JWT (ENTREPRISE) |
+| | `/api/entreprises/stats` | GET | JWT (ENTREPRISE/ADMIN) |
+| | `/api/entreprises/tickets` | GET | JWT (ENTREPRISE/ADMIN) |
+| | `/api/entreprises/avatar`, `/profil` | PATCH | JWT (ENTREPRISE) |
+| Tickets | `/api/tickets` | POST | JWT |
+| | `/api/tickets/mes-tickets` | GET | JWT |
+| | `/api/tickets/file/:serviceId` | GET | Non |
+| | `/api/tickets/:id/valider`\|`/refuser`\|`/appeler`\|`/terminer` | PATCH | JWT (ENTREPRISE/ADMIN) |
+| | `/api/tickets/all` | GET | JWT (ADMIN) |
 
 ---
 
-## 4. Schéma de base de données (Prisma)
-
-### 4.1 Modèles
+## 8. Structure du frontend (extrait)
 
 ```
-User
-├── id        (cuid, PK)
-├── nom       (String)
-├── email     (String, unique)
-├── password  (String, haché bcrypt)
-├── role      (CLIENT | ENTREPRISE | ADMIN)
-└── createdAt / updatedAt
-
-Entreprise
-├── id        (cuid, PK)
-├── nom       (String)
-├── userId    (FK → User, unique)
-└── services  → [Service]
-
-Service
-├── id           (cuid, PK)
-├── nom          (String)
-├── prefixe      (String : A, B, C, D...)
-├── icone        (String emoji)
-├── description  (String)
-├── entrepriseId (FK → Entreprise)
-└── tickets      → [Ticket]
-
-Ticket
-├── id        (cuid, PK)
-├── numero    (String : ex. A-1, B-3)
-├── statut    (ATTENTE | APPELE | TRAITE | ABSENT)
-├── guichet   (String?, optionnel)
-├── devant    (Int : nb de personnes devant)
-├── attente   (Int : minutes estimées)
-├── serviceId (FK → Service)
-├── userId    (FK → User)
-└── actions   → [Action]
-
-Action
-├── id        (cuid, PK)
-├── type      (EMIS | APPELE | TRAITE | ABSENT)
-├── guichet   (String?, optionnel)
-├── ticketId  (FK → Ticket)
-└── createdAt
-```
-
-### 4.2 Énumérations
-
-```
-Role         : CLIENT | ENTREPRISE | ADMIN
-StatutTicket : ATTENTE | APPELE | TRAITE | ABSENT
-TypeAction   : EMIS | APPELE | TRAITE | ABSENT
+FrontEnd/src/
+├── App.js                       ← routes + PrivateRoute
+├── api.js                       ← wrapper fetch (JWT auto)
+├── context/AuthContext.jsx      ← session utilisateur
+├── context/SocketContext.jsx    ← connexion socket.io globale
+├── components/PrivateRoute.jsx
+├── PAGES/
+│   ├── Inscription.js, Connexion.js
+│   ├── PClient/                 ← espace client (dashboard, prise de ticket)
+│   ├── PEntreprise/             ← espace entreprise (file, stats, profil)
+│   ├── PAdministrator/          ← vue admin globale
+│   ├── Services/ServicePage.jsx ← page générique service (Coiffeur/Tresseuses/…)
+│   └── Navbar/
 ```
 
 ---
 
-## 5. API REST — Endpoints
+## 9. Points de vigilance connus (dette technique)
 
-### Authentification (`/api/auth`)
-
-| Méthode | Route | Description | Auth requise |
-|---------|-------|-------------|--------------|
-| POST | `/api/auth/inscription` | Créer un compte (client ou entreprise) | Non |
-| POST | `/api/auth/connexion` | Se connecter → retourne un JWT | Non |
-| GET  | `/api/auth/me` | Récupérer le profil connecté | JWT |
-
-**Exemple inscription** :
-```json
-POST /api/auth/inscription
-{
-  "nom": "Jean Dupont",
-  "email": "jean@example.com",
-  "password": "motdepasse123",
-  "role": "client"
-}
-→ { "token": "eyJ...", "user": { "id": "...", "nom": "Jean Dupont", "role": "CLIENT" } }
-```
-
-### Tickets (`/api/tickets`)
-
-| Méthode | Route | Description | Auth requise |
-|---------|-------|-------------|--------------|
-| POST   | `/api/tickets` | Prendre un ticket | JWT (CLIENT) |
-| GET    | `/api/tickets/mes-tickets` | Voir ses propres tickets | JWT |
-| GET    | `/api/tickets/file/:serviceId` | File d'attente en direct | Non |
-| PATCH  | `/api/tickets/:id/appeler` | Appeler un ticket au guichet | JWT (ENTREPRISE/ADMIN) |
-| PATCH  | `/api/tickets/:id/terminer` | Marquer traité ou absent | JWT (ENTREPRISE/ADMIN) |
-
-### Services (`/api/services`)
-
-| Méthode | Route | Description | Auth requise |
-|---------|-------|-------------|--------------|
-| GET    | `/api/services` | Tous les services (public) | Non |
-| GET    | `/api/services/:entrepriseId` | Services d'une entreprise | Non |
-| POST   | `/api/services` | Créer un service | JWT (ENTREPRISE) |
-| DELETE | `/api/services/:id` | Supprimer un service | JWT (ENTREPRISE/ADMIN) |
-
-### Entreprise (`/api/entreprises`)
-
-| Méthode | Route | Description | Auth requise |
-|---------|-------|-------------|--------------|
-| GET | `/api/entreprises/moi` | Dashboard de l'entreprise connectée | JWT (ENTREPRISE) |
-| GET | `/api/entreprises/stats` | Statistiques (total, traités, absents...) | JWT (ENTREPRISE/ADMIN) |
-| GET | `/api/entreprises/tickets` | Tous les tickets de l'entreprise | JWT (ENTREPRISE/ADMIN) |
+- **Sécurité P0** : whitelist manquante sur `role` à l'inscription (§4).
+- **QR code de suivi de ticket** (`ServicePage.jsx`) non fonctionnel en pratique : l'URL encodée n'inclut ni l'entreprise ni le service, et le scan ne restaure pas le panneau de suivi (state React perdu au rechargement). À reprendre.
+- **Prix des services** hardcodés côté front (`PRICES` dans `ServicePage.jsx`), sans champ dédié en base — toute évolution de prix se fait dans le code, pas depuis un dashboard.
+- Absence de rate limiting et de politique de mot de passe (longueur minimale, complexité) à l'inscription/connexion.
+- Événements Socket.io non revérifiés côté serveur (le relais fait confiance au payload émis par le client).
 
 ---
 
-## 6. Modifications apportées au Frontend
-
-### 6.1 Nouveaux fichiers créés
-
-| Fichier | Rôle |
-|---------|------|
-| `src/api.js` | Utilitaire centralisé pour tous les appels HTTP (fetch + JWT automatique) |
-| `src/context/AuthContext.jsx` | Contexte React global : utilisateur connecté, login, logout |
-
-### 6.2 `src/App.js`
-
-**Modification** : Ajout de `<AuthProvider>` autour de toute l'application pour rendre l'état d'authentification accessible partout.
-
-```jsx
-// Avant
-<QueueProvider>...</QueueProvider>
-
-// Après
-<AuthProvider>
-  <QueueProvider>...</QueueProvider>
-</AuthProvider>
-```
-
-### 6.3 `src/PAGES/Inscription.js`
-
-**Modifications** :
-- Ajout de l'import `useNavigate`, `api`, `useAuth`
-- Ajout du champ **mot de passe** dans le formulaire (champ manquant)
-- `handleSubmit` passe de `console.log` à un vrai appel `POST /api/auth/inscription`
-- Affichage des erreurs API sous le formulaire
-- Redirection automatique après inscription :
-  - Rôle `client` → `/Client`
-  - Rôle `entreprise` → `/Entreprise`
-
-### 6.4 `src/PAGES/Connexion.js`
-
-**Modifications** :
-- Ajout de l'import `useNavigate`, `api`, `useAuth`
-- `handleSubmit` passe de `console.log` à un vrai appel `POST /api/auth/connexion`
-- Sauvegarde du JWT et des infos utilisateur dans `localStorage`
-- Affichage des erreurs API (mauvais identifiants, etc.)
-- Redirection automatique après connexion :
-  - `ADMIN` → `/Administrateur`
-  - `ENTREPRISE` → `/Entreprise`
-  - `CLIENT` → `/Client`
-
-### 6.5 `src/context/QueueContext.jsx`
-
-**Modifications** :
-- `addTicket` : mise à jour locale immédiate + sync asynchrone avec `POST /api/tickets` si l'utilisateur est connecté. Stocke le `dbId` (ID Neon) dans le ticket local pour les opérations suivantes.
-- `callTicket` : sync avec `PATCH /api/tickets/:dbId/appeler`
-- `markTraite` : sync avec `PATCH /api/tickets/:dbId/terminer` `{ statut: "TRAITE" }`
-- `markAbsent` : sync avec `PATCH /api/tickets/:dbId/terminer` `{ statut: "ABSENT" }`
-- **Stratégie** : Le local state reste la source de vérité pour l'affichage (temps réel), le backend est synchronisé en arrière-plan. Si l'API échoue, l'interface continue de fonctionner.
-
-### 6.6 `src/PAGES/PClient/DashbordClient.jsx`
-
-**Modifications** :
-- Les services ne sont plus 100% hardcodés. Au montage, `GET /api/services` est appelé pour charger les vrais services depuis la base de données.
-- Si l'API retourne des services, ils remplacent les services par défaut avec leurs vrais IDs (`serviceId`).
-- Si l'API échoue ou renvoie une liste vide, le fallback sur les services hardcodés est maintenu (l'app reste fonctionnelle).
-- `handleGetTicket` passe désormais le `serviceId` réel au ticket créé.
-
-### 6.7 `src/PAGES/PEntreprise/Entreprise.jsx`
-
-**Modifications majeures** :
-- Suppression de toutes les données fictives (`INITIAL_QUEUE`, `INITIAL_CURRENT`, etc.)
-- Au montage : chargement depuis `GET /api/entreprises/stats` et `GET /api/entreprises/tickets`
-- **Refresh automatique** toutes les 10 secondes pour afficher la file en temps réel
-- Nom et initiales de l'agent récupérés depuis l'utilisateur connecté (`useAuth`)
-- `handleNext` → `PATCH /api/tickets/:id/appeler`
-- `handleTraite` → `PATCH /api/tickets/:id/terminer { statut: "TRAITE" }`
-- `handleAbsent` → `PATCH /api/tickets/:id/terminer { statut: "ABSENT" }`
-- En cas d'échec API, les actions restent fonctionnelles localement (avec avertissement console)
-
----
-
-## 7. Flux utilisateur complet
-
-### Client
-```
-1. /inscription  → POST /api/auth/inscription → JWT sauvegardé
-2. /connexion    → POST /api/auth/connexion   → redirigé vers /Client
-3. /Client       → Choix interface ou services
-4. /DashbordClient → Charge services depuis API
-5. Clic "Obtenir ticket" → POST /api/tickets → ticket en base Neon
-```
-
-### Entreprise
-```
-1. /inscription  → Compte créé avec rôle ENTREPRISE
-2. /connexion    → Redirigé vers /Entreprise
-3. /Entreprise   → Charge file depuis API (refresh 10s)
-4. "Appeler suivant" → PATCH /api/tickets/:id/appeler
-5. "Traité / Absent" → PATCH /api/tickets/:id/terminer
-```
-
----
-
-## 8. Commandes de démarrage
+## 10. Démarrage local
 
 ```bash
 # Backend
 cd BackEnd
-npm run dev          # Démarre sur http://localhost:5000
+npm install
+npm run db:push       # synchronise le schéma Prisma → Neon
+npm run dev            # http://localhost:5000
 
 # Frontend
 cd FrontEnd
-npm start            # Démarre sur http://localhost:3000
-
-# Prisma (base de données)
-npm run db:push      # Synchroniser le schéma avec Neon
-npm run db:studio    # Interface visuelle Prisma Studio
-npm run db:generate  # Régénérer le client Prisma
+npm install
+npm start               # http://localhost:3000
 ```
 
----
-
-## 9. Variables d'environnement requises
-
-**`BackEnd/.env`**
-```
-DATABASE_URL="postgresql://user:password@ep-xxx.neon.tech/neondb?sslmode=require"
-JWT_SECRET="votre_secret_fort"
-PORT=5000
-```
-
-**`FrontEnd/.env`**
-```
-DISABLE_ESLINT_PLUGIN=true
-```
-
----
-
-## 10. Points d'amélioration futurs
-
-- Ajouter un système de **refresh token** (JWT expire après 7 jours)
-- **WebSocket** (Socket.io) pour un push temps réel de la file d'attente côté client
-- Page de création de services pour les entreprises depuis l'interface
-- Pagination sur l'historique des tickets dans l'admin
-
----
-
-## 11. Sécurité et contrôle d'accès par rôle
-
-### 11.1 Contexte
-
-Après la mise en place de l'authentification, une deuxième phase a consisté à protéger les routes et l'interface selon le rôle de l'utilisateur connecté.
-
-### 11.2 Nouveau fichier : `src/components/PrivateRoute.jsx`
-
-Composant React qui enveloppe chaque route protégée. Il effectue deux vérifications :
-
-1. **Utilisateur connecté ?** → sinon redirige vers `/connexion`
-2. **Rôle autorisé ?** → sinon redirige vers la page d'accueil de son propre espace
-
-```jsx
-// Exemple d'utilisation dans App.js
-<Route path="/Entreprise" element={
-  <PrivateRoute roles={['ENTREPRISE', 'ADMIN']}>
-    <Entreprise />
-  </PrivateRoute>
-} />
-```
-
-**Tableau des redirections en cas d'accès non autorisé :**
-
-| Rôle | Redirigé vers |
-|------|--------------|
-| CLIENT essayant d'accéder à `/Entreprise` | `/Client` |
-| CLIENT essayant d'accéder à `/Administrateur` | `/Client` |
-| ENTREPRISE essayant d'accéder à `/Administrateur` | `/Entreprise` |
-| Non connecté sur n'importe quelle route protégée | `/connexion` |
-
-### 11.3 Matrice des droits d'accès
-
-| Route | Non connecté | CLIENT | ENTREPRISE | ADMIN |
-|-------|:---:|:---:|:---:|:---:|
-| `/`, `/inscription`, `/connexion` | ✅ | ✅ | ✅ | ✅ |
-| `/Client`, `/DashbordClient`, `/Service2` | ❌ | ✅ | ❌ | ✅ |
-| `/service/coiffure`, `/tresseuses`, `/pressings` | ❌ | ✅ | ❌ | ✅ |
-| `/Entreprise` | ❌ | ❌ | ✅ | ✅ |
-| `/Administrateur` | ❌ | ❌ | ❌ | ✅ |
-
-### 11.4 Modifications `src/App.js`
-
-Toutes les routes ont été enveloppées dans `<PrivateRoute roles={[...]}>` avec les rôles autorisés correspondants. Les routes `/`, `/inscription` et `/connexion` restent publiques.
-
----
-
-## 12. Expérience utilisateur — Navbar et Accueil adaptatifs
-
-### 12.1 Navbar (`src/PAGES/Navbar/Navbar.jsx`)
-
-**Avant** : les boutons Connexion et Inscription étaient toujours affichés.
-
-**Après** : la navbar s'adapte dynamiquement à l'état de connexion.
-
-| État | Contenu affiché à droite |
-|------|--------------------------|
-| Non connecté | Boutons **Connexion** + **Inscription** |
-| Connecté | Nom de l'utilisateur + badge du rôle + bouton **Déconnexion** |
-
-Le bouton Déconnexion efface le JWT et les données utilisateur du `localStorage`, puis redirige vers `/`.
-
-**Styles ajoutés dans `Navbar.scss`** :
-- `.nav-user` : conteneur glassmorphism pour le profil
-- `.nav-user__name` : nom en blanc gras
-- `.nav-user__role` : badge coloré avec le rôle (Client / Entreprise / Admin)
-
-### 12.2 Accueil (`src/PAGES/acceuil.js`)
-
-Les trois cartes (Espace Client, Espace Entreprise, Administration) sont maintenant filtrées selon le rôle :
-
-| Rôle | Espace Client | Espace Entreprise | Administration |
-|------|:---:|:---:|:---:|
-| Non connecté | ✅ | ✅ | ✅ |
-| CLIENT | ✅ | ❌ | ❌ |
-| ENTREPRISE | ❌ | ✅ | ❌ |
-| ADMIN | ✅ | ✅ | ✅ |
-
-**Implémentation** : trois variables booléennes calculées depuis `user.role` contrôlent le rendu conditionnel de chaque carte.
-
-### 12.3 Redirection post-authentification
-
-**Avant** : après inscription/connexion, l'utilisateur était redirigé directement vers son espace (`/Client`, `/Entreprise` ou `/Administrateur`) selon son rôle.
-
-**Après** : dans les deux cas, l'utilisateur est redirigé vers l'**accueil** (`/`). Il voit alors uniquement les cartes correspondant à son rôle et choisit lui-même où aller.
-
----
-
-## 13. Compte Administrateur
-
-### 13.1 Problème
-
-L'inscription ne propose que les rôles `client` et `entreprise`. Il n'y a pas d'interface pour créer un compte `ADMIN` (voulu pour la sécurité).
-
-### 13.2 Solution — Script de seed
-
-Fichier créé : `BackEnd/prisma/seed.js`
-
-Ce script crée un compte admin par défaut s'il n'existe pas encore en base.
-
-```bash
-cd BackEnd
-node prisma/seed.js
-```
-
-**Identifiants créés :**
-
-| Champ | Valeur |
-|-------|--------|
-| Email | `admin@jeloft.com` |
-| Mot de passe | `admin1234` |
-| Rôle | `ADMIN` |
-
-Le script est **idempotent** : si le compte existe déjà, il affiche un message et ne crée rien. Il peut être relancé sans risque à tout moment.
-
-### 13.3 Alternative — Prisma Studio
-
-```bash
-npm run db:studio   # Ouvre http://localhost:5555
-```
-Permet de modifier manuellement le champ `role` d'un utilisateur existant de `CLIENT` à `ADMIN` via l'interface visuelle.
-
----
-
-## 14. Flux utilisateur mis à jour
-
-### Client
-```
-1. /inscription → choisit "Client" → POST /api/auth/inscription
-2. Redirigé vers / (accueil) → voit uniquement "Espace Client"
-3. Clique "Accéder" → /Client → /DashbordClient
-4. Prend un ticket → POST /api/tickets → enregistré en base Neon
-```
-
-### Entreprise
-```
-1. /inscription → choisit "Entreprise" → POST /api/auth/inscription
-2. Redirigé vers / (accueil) → voit uniquement "Espace Entreprise"
-3. Clique "Gérer" → /Entreprise → charge la file depuis l'API (refresh 10s)
-4. Appelle/traite/marque absent → PATCH /api/tickets/:id/...
-```
-
-### Admin
-```
-1. Connexion avec admin@jeloft.com / admin1234
-2. Redirigé vers / (accueil) → voit les 3 cartes
-3. Accès libre à tous les espaces
-```
-
-### Accès non autorisé
-```
-Un CLIENT tape /Entreprise dans l'URL
-→ PrivateRoute détecte role=CLIENT, roles requis=[ENTREPRISE, ADMIN]
-→ Redirigé automatiquement vers /Client
-```
+Variables d'environnement : voir `DEPLOIEMENT.md` (Backend : `DATABASE_URL`, `JWT_SECRET`, `CLIENT_URL` ; Frontend : `REACT_APP_API_URL`, `REACT_APP_SOCKET_URL`).
