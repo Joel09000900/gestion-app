@@ -61,19 +61,13 @@ export default function Acceuil() {
 
         {/* Image / logo animé */}
         <div className="ac-hero-image-wrap">
-          <div className="ac-hero-image-ring">
-            <div className="ac-hero-image-inner">
-              <div className="ac-hero-image-placeholder">
-                <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
-                  <rect x="10" y="20" width="14" height="50" rx="4" fill="#6c63ff" opacity=".9"/>
-                  <rect x="30" y="10" width="14" height="70" rx="4" fill="#4fc3f7" opacity=".85"/>
-                  <rect x="50" y="28" width="14" height="42" rx="4" fill="#26c6da" opacity=".8"/>
-                  <rect x="70" y="18" width="10" height="52" rx="4" fill="#ab47bc" opacity=".7"/>
-                  <circle cx="72" cy="14" r="5" fill="#4fc3f7"/>
-                </svg>
-                <span className="ac-img-label">Jeloft</span>
-              </div>
-            </div>
+          <div className="ac-hero-logo-frame">
+            <div
+              className="ac-hero-logo-image"
+              role="img"
+              aria-label="Jeloft"
+              style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/images/jeloft-logo-transparent.png)` }}
+            />
           </div>
         </div>
 

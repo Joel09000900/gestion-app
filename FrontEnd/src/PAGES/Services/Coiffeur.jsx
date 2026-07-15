@@ -1,4 +1,4 @@
-import ServicePage from "./ServicePage";
+ import ServicePage from "./ServicePage";
 import "./Coiffeur.css";
 import "../../components/WaitEstimate.css";
 

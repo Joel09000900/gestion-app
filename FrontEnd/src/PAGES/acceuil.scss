@@ -42,35 +42,25 @@
   justify-content: center;
 }
 
-.ac-hero-image-ring {
+.ac-hero-logo-frame {
+  display: inline-block;
   padding: 14px;
   border-radius: 50%;
   background: conic-gradient(from 180deg, #6c63ff, #4fc3f7, #26c6da, #ab47bc, #6c63ff);
   box-shadow: 0 0 60px rgba(108, 99, 255, 0.45);
 }
 
-
-.ac-hero-image-inner {
+.ac-hero-logo-image {
+  width: clamp(160px, 22vw, 240px);
+  height: clamp(160px, 22vw, 240px);
   border-radius: 50%;
-  background: rgba(13, 13, 56, 0.92);
-  padding: clamp(2rem, 5vw, 3.5rem);
-}
-
-.ac-hero-image-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.ac-img-label {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  background: linear-gradient(90deg, #4fc3f7, #ab47bc);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background-color: #f5f7ff;
+  box-sizing: border-box;
+  padding: 1.4rem;
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  background-size: contain;
+  background-position: center;
 }
 
 

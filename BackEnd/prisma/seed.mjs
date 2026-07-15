@@ -29,8 +29,8 @@ console.log(' - henoc  :', henoc ? henoc.id : '❌ introuvable');
 if (joj) {
   await prisma.service.createMany({
     data: [
-      { nom: 'Coupe homme',  prefixe: 'A', icone: '✂️', description: 'Coupe classique, dégradé, barbe',   entrepriseId: joj.id },
-      { nom: 'Coupe enfant', prefixe: 'B', icone: '🧒', description: 'Coupe adaptée aux plus petits',     entrepriseId: joj.id },
+      { nom: 'Coupe homme',  prefixe: 'A', icone: '💇🏿‍♂️', description: 'Coupe classique, dégradé, barbe',   entrepriseId: joj.id },
+      { nom: 'Coupe enfant', prefixe: 'B', icone: '🧒🏿', description: 'Coupe adaptée aux plus petits',     entrepriseId: joj.id },
       { nom: 'Coloration',   prefixe: 'C', icone: '🎨', description: 'Couleur, mèches, balayage',          entrepriseId: joj.id },
     ],
     skipDuplicates: true,
@@ -43,8 +43,8 @@ if (joj) {
 if (jojo8) {
   await prisma.service.createMany({
     data: [
-      { nom: 'Défrissage',   prefixe: 'A', icone: '💆', description: 'Lissage et défrisage professionnel',     entrepriseId: jojo8.id },
-      { nom: 'Tresses',      prefixe: 'B', icone: '👑', description: 'Box braids, cornrows, twists sur mesure', entrepriseId: jojo8.id },
+      { nom: 'Défrissage',   prefixe: 'A', icone: '💆🏿‍♀️', description: 'Lissage et défrisage professionnel',     entrepriseId: jojo8.id },
+      { nom: 'Tresses',      prefixe: 'B', icone: '👩🏿‍🦱', description: 'Box braids, cornrows, twists sur mesure', entrepriseId: jojo8.id },
       { nom: 'Tissage',      prefixe: 'C', icone: '🧵', description: 'Pose de tissage cousu ou clipsé',         entrepriseId: jojo8.id },
       { nom: 'Mèche longue', prefixe: 'D', icone: '📏', description: 'Rajout de mèches longues, effet volume',  entrepriseId: jojo8.id },
     ],

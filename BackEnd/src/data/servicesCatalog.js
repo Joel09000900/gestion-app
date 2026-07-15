@@ -4,13 +4,13 @@ export const SERVICE_TYPES = ['coiffure', 'tresseuses', 'pressings', 'lavage-aut
 
 export const SERVICES_BY_TYPE = {
   coiffure: [
-    { nom: 'Coupe homme',  prefixe: 'A', icone: '💈', description: 'Coupe classique, dégradé, barbe' },
-    { nom: 'Coupe enfant', prefixe: 'B', icone: '🧒', description: 'Coupe adaptée aux plus petits' },
+    { nom: 'Coupe homme',  prefixe: 'A', icone: '💇🏿‍♂️', description: 'Coupe classique, dégradé, barbe' },
+    { nom: 'Coupe enfant', prefixe: 'B', icone: '🧒🏿', description: 'Coupe adaptée aux plus petits' },
     { nom: 'Coloration',   prefixe: 'C', icone: '🎨', description: 'Couleur, mèches, balayage' },
   ],
   tresseuses: [
-    { nom: 'Défrissage',   prefixe: 'A', icone: '💆', description: 'Lissage et défrisage professionnel' },
-    { nom: 'Tresses',      prefixe: 'B', icone: '👑', description: 'Box braids, cornrows, twists sur mesure' },
+    { nom: 'Défrissage',   prefixe: 'A', icone: '💆🏿‍♀️', description: 'Lissage et défrisage professionnel' },
+    { nom: 'Tresses',      prefixe: 'B', icone: '👩🏿‍🦱', description: 'Box braids, cornrows, twists sur mesure' },
     { nom: 'Tissage',      prefixe: 'C', icone: '🧵', description: 'Pose de tissage cousu ou clipsé' },
     { nom: 'Mèche longue', prefixe: 'D', icone: '📏', description: 'Rajout de mèches longues, effet volume' },
   ],
