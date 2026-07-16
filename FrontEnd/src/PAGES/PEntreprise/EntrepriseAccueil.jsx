@@ -6,7 +6,7 @@ import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { AiOutlineShop, AiOutlineAppstore } from 'react-icons/ai';
+import { AiOutlineShop } from 'react-icons/ai';
 
 const ORB_PULSE = {
   animate: {
@@ -90,37 +90,6 @@ export default function EntrepriseAccueil() {
             <motion.button
               className="btn-submit"
               onClick={() => navigate('/Entreprise')}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              Confirmer
-            </motion.button>
-          </motion.div>
-
-          {/* ── Services ── */}
-          <motion.div
-            className="client-card"
-            variants={card(0.35)}
-            initial="hidden"
-            animate="visible"
-            whileHover={{ scale: 1.04, y: -6,
-              boxShadow: '0 32px 60px rgba(0,0,0,0.5), 0 0 30px rgba(123,110,246,0.3)',
-            }}
-          >
-            <motion.div
-              className="orb"
-              animate={ORB_PULSE.animate}
-              transition={ORB_PULSE.transition}
-            >
-              <AiOutlineAppstore size={28} color="#fff" />
-            </motion.div>
-
-            <h3 className="gc-title">Services</h3>
-            <p className="gc-subtitle">Gérez et configurez vos services</p>
-
-            <motion.button
-              className="btn-submit"
-              onClick={() => navigate('/EntrepriseServices')}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >

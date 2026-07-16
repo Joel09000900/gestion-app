@@ -12,7 +12,6 @@ import Client from './PAGES/PClient/Client';
 import Client2 from './PAGES/PClient/Client2';
 import Entreprise from './PAGES/PEntreprise/Entreprise';
 import EntrepriseAccueil from './PAGES/PEntreprise/EntrepriseAccueil';
-import EntrepriseServices from './PAGES/PEntreprise/EntrepriseServices';
 import PAdmin from './PAGES/PAdministrator/PAdmin';
 import DashbordClient from './PAGES/PClient/DashbordClient';
 import Service2 from './PAGES/PClient/Service2';
@@ -71,9 +70,6 @@ function App() {
         {/* Routes ENTREPRISE uniquement */}
         <Route path="/EntrepriseAccueil" element={
           <PrivateRoute roles={['ENTREPRISE', 'ADMIN']}><EntrepriseAccueil /></PrivateRoute>
-        } />
-        <Route path="/EntrepriseServices" element={
-          <PrivateRoute roles={['ENTREPRISE', 'ADMIN']}><EntrepriseServices /></PrivateRoute>
         } />
         <Route path="/Entreprise" element={
           <PrivateRoute roles={['ENTREPRISE', 'ADMIN']}><Entreprise /></PrivateRoute>
