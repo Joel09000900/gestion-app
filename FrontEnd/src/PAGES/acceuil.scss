@@ -101,26 +101,6 @@
 .ac-hl-cyan { color: #4fc3f7; font-weight: 600; }
 .ac-hl-purple { color: #b39dff; font-weight: 600; }
 
-.ac-hero-stats {
-  display: flex;
-  gap: 2.2rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-
-.ac-stat-box { display: flex; flex-direction: column; }
-
-.ac-stat-val {
-  font-size: 1.9rem;
-  font-weight: 800;
-  color: #fff;
-}
-
-.ac-stat-lab {
-  font-size: 0.85rem;
-  color: #9aa0cc;
-}
-
 .ac-hero-actions {
   display: flex;
   gap: 1rem;
@@ -448,6 +428,5 @@
     padding-top: 4rem;
   }
   .ac-hero-desc { margin-left: auto; margin-right: auto; }
-  .ac-hero-stats,
   .ac-hero-actions { justify-content: center; }
 }

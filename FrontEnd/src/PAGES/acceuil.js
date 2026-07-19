@@ -84,14 +84,6 @@ export default function Acceuil() {
             temps d'attente et d'améliorer l'expérience utilisateur grâce à un système de{" "}
             <span className="ac-hl-purple">tickets numériques en temps réel</span>.
           </p>
-          <div className="ac-hero-stats">
-            {[["99%", "Disponibilité"], ["< 1s", "Temps de réponse"], ["3", "Espaces dédiés"]].map(([val, lab]) => (
-              <div key={lab} className="ac-stat-box">
-                <span className="ac-stat-val">{val}</span>
-                <span className="ac-stat-lab">{lab}</span>
-              </div>
-            ))}
-          </div>
           <div className="ac-hero-actions">
             <Link to="/inscription" className="ac-btn-primary">Commencer gratuitement →</Link>
             <button
