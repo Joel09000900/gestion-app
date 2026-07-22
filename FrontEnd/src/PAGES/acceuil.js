@@ -227,28 +227,6 @@ export default function Acceuil() {
 
 const FEATURES = [
   {
-    label: "Temps Réel",
-    desc: "Suivi en temps réel des files d'attente avec estimation précise",
-    iconClass: "ac-feat-icon--realtime",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
-        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-      </svg>
-    ),
-  },
-  {
-    label: "Analytics",
-    desc: "Rapports détaillés et analyses pour optimiser vos services",
-    iconClass: "ac-feat-icon--analytics",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
-        <line x1="18" y1="20" x2="18" y2="10"/>
-        <line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6"  y1="20" x2="6"  y2="14"/>
-      </svg>
-    ),
-  },
-  {
     label: "Multi-Services",
     desc: "Gestion simultanée de multiples services et points d'accueil",
     iconClass: "ac-feat-icon--multi",
