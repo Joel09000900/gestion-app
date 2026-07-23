@@ -178,9 +178,10 @@ export default function Acceuil() {
               <div className="ac-modal-section">
                 <h3 className="ac-modal-section-title">🎯 Contexte du projet</h3>
                 <p className="ac-modal-text">
-                  Jeloft est un outil de gestion développé dans le cadre d'un mémoire de fin d'études en Informatique.
-                  Face aux longues files d'attente dans les divers secteurs notamment celui de l'informel,
-                  ce projet propose une solution numérique partielle pour transformer l'expérience d'attente.
+                  Jeloft est un outil de gestion de files d'attente. Développé dans le cadre d'un
+                  mémoire de fin d'études en Informatique, ce projet propose une solution numérique
+                  partielle pour transformer l'expérience d'attente face aux longues files d'attente
+                  dans les divers secteurs, notamment celui de l'informel.
                 </p>
               </div>
               <div className="ac-modal-section">
