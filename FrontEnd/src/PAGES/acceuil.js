@@ -178,7 +178,7 @@ export default function Acceuil() {
               <div className="ac-modal-section">
                 <h3 className="ac-modal-section-title">🎯 Contexte du projet</h3>
                 <p className="ac-modal-text">
-                  Jeloft est développé dans le cadre d'un mémoire de fin d'études en Informatique.
+                  Jeloft est un outil de gestion développé dans le cadre d'un mémoire de fin d'études en Informatique.
                   Face aux longues files d'attente dans les divers secteurs notamment celui de l'informel,
                   ce projet propose une solution numérique partielle pour transformer l'expérience d'attente.
                 </p>
@@ -212,9 +212,9 @@ export default function Acceuil() {
               <div className="ac-modal-section">
                 <h3 className="ac-modal-section-title">👤 Auteur</h3>
                 <p className="ac-modal-text">
-                  Projet réalisé par <strong className="ac-author">Joël</strong> — étudiant en
-                  Génie Informatique. Ce système vise à améliorer la qualité de service dans les
-                  structures accueillant du public en Afrique et au-delà.
+                  Projet réalisé par <strong className="ac-author">Joël</strong>. Ce système vise à
+                  améliorer la qualité de service dans les structures accueillant du public en
+                  Afrique et au-delà.
                 </p>
               </div>
             </div>
