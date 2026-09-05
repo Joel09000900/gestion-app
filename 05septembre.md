@@ -20,7 +20,7 @@ entre l'écrit et le code que l'audit du 1ᵉʳ septembre reprochait au mémoire
 | **Front déployé** | `https://gestion-app-pi.vercel.app` (Vercel) |
 | **Back déployé** | `https://gestion-app-g2qu.onrender.com` (Render) |
 | **Base** | PostgreSQL hébergée sur NeonDB |
-| **Historique** | 31 commits, messages conventionnés (Feat, Fix, Refactor, Chore) |
+| **Historique** | 33 commits, messages conventionnés (Feat, Fix, Refactor, Chore) |
 | **Volume** | Back-end 891 lignes JS · Front-end 4 323 lignes JS/JSX, hors feuilles de style |
 
 **Problème traité.** Chez un prestataire de proximité, la file d'attente est
@@ -387,6 +387,27 @@ const ROLES_INSCRIPTION = ['CLIENT', 'ENTREPRISE'];
 > Elle n'était pas relevée par l'audit du 1ᵉʳ septembre, qui classait le domaine
 > « Authentification et rôles » en conforme.
 
+**Vérification en base, 5 septembre.** Un recensement des comptes de production a
+été fait après correction : la base compte 19 comptes, dont **un seul de rôle
+`ADMIN`** — `admin@jeloft.com`, créé le 28 mai 2026, soit le compte légitime
+d'origine. Aucun compte administrateur n'a donc été créé par la faille pendant
+les deux mois où elle était ouverte. C'est une réponse utile à préparer si le
+jury pose la question de l'impact.
+
+**Rotation des identifiants, 5 septembre.** Le mot de passe du compte
+administrateur figurait en clair dans `RESUME.md`, fichier suivi par git et
+poussé sur un dépôt public. Il a été remplacé par une valeur aléatoire de 20
+caractères via `reset-password.js`, et le changement vérifié : l'ancien mot de
+passe renvoie désormais 401, le nouveau ouvre une session.
+
+> **Ce que la suppression du fichier ne fait pas.** Retirer `RESUME.md` du dépôt
+> n'efface pas les commits qui le contenaient : la valeur reste lisible dans
+> l'historique, dans les éventuels clones et forks, et dans les objets encore
+> référencés côté GitHub. Réécrire l'historique (`git filter-repo`, force-push)
+> ne règle pas non plus le fond — un secret publié doit être considéré comme
+> compromis quoi qu'il arrive, et la réécriture casse tous les clones existants.
+> **La rotation est le correctif ; la réécriture d'historique n'en est pas un.**
+
 ### Garde côté client
 
 `PrivateRoute` redirige vers `/connexion` sans session, et renvoie vers l'espace
@@ -594,16 +615,37 @@ personnes ont été choisis avec une teinte de peau noire (💇🏿‍♂️, �
 plutôt que le jaune par défaut. Le catalogue `agence-waves` reprend les
 opérations réelles d'une agence de monnaie électronique.
 
-**État à connaître.** Aucune entreprise n'est enregistrée sous le type
-`agence-waves`, et le type étant exclu de l'inscription, aucune ne peut s'y
-créer : la page affichera « Aucune agence Wave disponible pour le moment ».
-La catégorie existe structurellement mais reste sans contenu.
+### État réel des catégories en base — relevé du 5 septembre
+
+| Type | Entreprises |
+|---|---|
+| `coiffure` | 3 — Luxe Barber, CHEZ MAII, JPS Coiffure |
+| `pressings` | 3 — Pressing, Premoci_pressing, Khalys pressing Shop |
+| `lavage-auto` | 3 — First Lavage, Pro Cleaner, Lavage Auto St-Michel |
+| `tresseuses` | 1 — Marie Estelle |
+| `residence` | **0** |
+| `agence-waves` | **0** |
+
+Les deux catégories réservées sont donc **sans contenu**, et l'inscription y
+étant fermée, aucune entreprise ne peut s'y créer d'elle-même : l'administrateur
+qui ouvre ces pages lit « Aucune agence disponible pour le moment ».
+
+Ce n'est pas une conséquence des modifications du 5 septembre. `residence` a été
+ajoutée au catalogue en juin (commit `468c7d3`) et **n'a jamais accueilli la
+moindre entreprise** — c'est vraisemblablement la raison pour laquelle elle a été
+retirée du parcours client : elle y apparaissait comme une catégorie vide.
+
+Un script d'amorçage, `BackEnd/seed-categories-admin.js`, est prêt à créer une
+entreprise de démonstration par catégorie réservée, avec son catalogue de
+services. Il est idempotent (une catégorie déjà peuplée est laissée telle quelle)
+et affiche les identifiants créés pour permettre de revenir en arrière. **Il n'a
+pas été exécuté** : il écrit sur la base de production.
 
 ---
 
 ## 12. Ce qui a changé le 5 septembre 2026
 
-Six modifications, toutes vérifiées par exécution ou par compilation.
+Huit modifications, toutes vérifiées par exécution ou par compilation.
 
 | # | Modification | Fichiers |
 |---|---|---|
@@ -613,6 +655,8 @@ Six modifications, toutes vérifiées par exécution ou par compilation.
 | 4 | **Émission déplacée côté serveur** — boucle de relais supprimée, fonction `diffuser()`, six `emit` retirés du front | `socket.js`, `tickets.controller.js`, `Entreprise.jsx`, `ServicePage.jsx` |
 | 5 | **Catégories réservées à l'administrateur** — Résidence retirée du client et de l'inscription, Agence Waves créée | `servicesCatalog.js`, `auth.controller.js`, `App.js`, `Inscription.js`, `Service2.jsx`, `ServicePage.jsx`, `AgenceWaves.jsx/.css` |
 | 6 | **Écran d'accueil animé supprimé** — la barre de chargement de 2,5 s puis 0,8 s de transition disparaissent ; `/` ouvre directement sur l'accueil | `App.js`, suppression de `SplashScreen.jsx` |
+| 7 | **Mot de passe administrateur changé** — l'ancien figurait en clair dans `RESUME.md`, sur un dépôt public (§ 7) | base de production, via `reset-password.js` |
+| 8 | **Script d'amorçage des catégories réservées** ajouté, non exécuté (§ 11) | `seed-categories-admin.js` |
 
 Corrections mineures au passage : le message d'état vide accordait mal au féminin
 (« Aucun agence immobilière »), et l'import `FaBuilding` devenu inutile dans
@@ -627,6 +671,10 @@ Corrections mineures au passage : le message d'état vide accordait mal au fémi
 - Canal Socket.IO : un client anonyme émettant un faux `ticket:appele` n'est
   relayé à personne ; `diffuser()` appelé comme le fait un contrôleur atteint bien
   les navigateurs abonnés.
+- Base de production interrogée en lecture : 19 comptes, un seul `ADMIN`,
+  10 entreprises réparties sur quatre types, 28 tickets et 83 actions.
+- Rotation du mot de passe administrateur confirmée : ancien mot de passe en
+  401, nouveau en 200.
 - **Non vérifié de bout en bout** : le refus 400 de RG-03 sur un ticket réel.
   Le `.env` local pointe sur la base de production, et le test aurait exigé d'y
   créer des données.
@@ -658,52 +706,55 @@ recense ce que l'application **ne fait pas**, ou fait imparfaitement.
 6. **La suppression d'un ticket par le client est physique**, sans statut
    `ANNULE` : l'historique et le journal d'audit perdent la trace.
 7. **Refus et absence sont indiscernables** dans l'indicateur affiché (§ 9).
+8. **Les deux catégories réservées à l'administrateur sont vides** et ne peuvent
+   pas se remplir, l'inscription y étant fermée (§ 11). `residence` n'a jamais
+   accueilli d'entreprise depuis sa création en juin.
 
 ### Techniques
 
-8. **Salle de diffusion unique.** Tous les navigateurs de toutes les entreprises
+9. **Salle de diffusion unique.** Tous les navigateurs de toutes les entreprises
    reçoivent tous les événements. Confidentialité commerciale entre prestataires
    concurrents, et trafic croissant avec le carré du nombre d'utilisateurs.
    Correctif : `socket.join('service:' + serviceId)` au lieu de la salle globale.
-9. **Le contexte Socket lit le jeton une seule fois, au montage.** Après une
+10. **Le contexte Socket lit le jeton une seule fois, au montage.** Après une
    connexion réussie, la socket reste anonyme jusqu'au rechargement de la page.
    Sans effet aujourd'hui puisque le canal est descendant seul, mais à traiter en
    même temps qu'un éventuel cloisonnement.
-10. **Aucun test automatisé.** Le seul fichier présent, `FrontEnd/src/App.test.js`,
+11. **Aucun test automatisé.** Le seul fichier présent, `FrontEnd/src/App.test.js`,
     est le gabarit livré par Create React App : il cherche un lien « learn react »
     qui n'existe pas et échouerait s'il était exécuté. La campagne de tests décrite
     au chapitre III a été menée **manuellement**, sous Postman pour l'API et dans
     le navigateur pour le bout en bout. Le mémoire doit le dire explicitement.
-11. **Aucune limitation de débit** sur `/api/auth/connexion` : le service est
+12. **Aucune limitation de débit** sur `/api/auth/connexion` : le service est
     ouvert à une attaque par force brute. `express-rate-limit` se pose en dix minutes.
-12. **Aucune politique de mot de passe** : `"a"` est accepté à l'inscription.
-13. **Aucune bibliothèque de validation d'entrée.** Les corps de requête sont
+13. **Aucune politique de mot de passe** : `"a"` est accepté à l'inscription.
+14. **Aucune bibliothèque de validation d'entrée.** Les corps de requête sont
     déstructurés directement ; `updateEntrepriseProfile` passe `parseFloat` sans
     contrôle. Prisma protège de l'injection SQL — le risque est fonctionnel, pas
     critique.
-14. **Fuite d'information en erreur.** Chaque réponse 500 renvoie `err.message`
+15. **Fuite d'information en erreur.** Chaque réponse 500 renvoie `err.message`
     au client, ce qui expose des détails internes de la base.
-15. **Aucune pagination** sur `GET /api/tickets/all` ni sur
+16. **Aucune pagination** sur `GET /api/tickets/all` ni sur
     `GET /api/entreprises/tickets`. Sans conséquence en démonstration, bloquant à
     l'échelle.
-16. **Avatars stockés en base64** dans des colonnes texte, avec
+17. **Avatars stockés en base64** dans des colonnes texte, avec
     `express.json({ limit: '5mb' })`. C'est un choix cohérent avec la contrainte
     de gratuité de l'infrastructure — à assumer plutôt qu'à subir en question.
-17. **Code mort côté front.** Le répertoire `PAGES/PClient/DashbordClientContent/`
+18. **Code mort côté front.** Le répertoire `PAGES/PClient/DashbordClientContent/`
     (sept composants) n'est référencé nulle part et affiche des valeurs en dur
     — « 010 », « 38 % », « 5 personnes devant vous ». Ce sont des vestiges de la
     maquette initiale, et ce sont exactement les fichiers qu'un examinateur
     curieux ouvrira s'il cherche l'affichage de la position.
-18. **`Ticket.statut` a une valeur par défaut incohérente** avec le cycle (§ 4).
+19. **`Ticket.statut` a une valeur par défaut incohérente** avec le cycle (§ 4).
 
 ### Documentaires
 
-19. Le dossier `diagrammes/` livré contient la **version 1**, non conforme au
+20. Le dossier `diagrammes/` livré contient la **version 1**, non conforme au
     code (classes `Guichet`, `FileAttente`, `Notification`, héritage `Utilisateur`,
     statuts `EN_ATTENTE` / `SERVI` / `ANNULE`). Les figures insérées dans le
     mémoire sont, elles, la version 2 conforme. Le dossier
     `diagrammes/v2-conformes-code` cité dans le mémoire n'existe pas.
-20. `AVIS_JURY_ET_CORRECTIONS.md` (mai 2026) décrit une version antérieure du
+21. `AVIS_JURY_ET_CORRECTIONS.md` (mai 2026) décrit une version antérieure du
     projet — état en `localStorage`, `QueueContext`, absence de back-end — et
     contredit frontalement le mémoire. À sortir du dossier remis.
 
@@ -733,23 +784,39 @@ recense ce que l'application **ne fait pas**, ou fait imparfaitement.
 
 ## 15. État du dépôt au 5 septembre 2026
 
-Aucun commit n'a été fait. Quatre lots de travail cohabitent dans l'arbre :
+Le travail de la journée est commité et poussé sur `main`
+(`35c5749..d9d9514`), portant le dépôt de 31 à 33 commits.
 
-| Lot | Contenu |
+| Commit | Objet |
 |---|---|
-| Statistiques | Endpoint enrichi et onglet `recharts` (travail du 1ᵉʳ septembre, jamais commité) |
-| Sécurité et RG-03 | Modifications 1 à 4 du § 12 |
-| Catégories administrateur | Modification 5 du § 12 |
-| Suppression du splash | Modification 6 du § 12 |
+| `cbe8c64` | Code — sécurité de l'inscription, RG-03, émission temps réel côté serveur, statistiques, catégories réservées, suppression de l'écran de chargement |
+| `d9d9514` | Documentation — le présent récapitulatif, notes de session de juillet, retrait de `RESUME.md` |
 
-Trois fichiers sont touchés par plusieurs lots — `auth.controller.js`, `App.js`,
-`ServicePage.jsx` — un découpage en commits séparés demanderait donc un
-`git add -p`.
+**Pourquoi un seul commit pour le code.** Les quatre lots de la journée se
+croisent dans les mêmes fichiers — `auth.controller.js` porte à la fois la liste
+blanche des rôles et la restriction des types d'inscription, `App.js` les routes
+réservées et la suppression du splash, `ServicePage.jsx` le retrait des émissions
+et la nouvelle catégorie, `Entreprise.jsx` l'onglet statistiques et le retrait
+des émissions. Un découpage propre aurait demandé un `git add -p` interactif. Le
+message de commit détaille les quatre lots séparément.
 
-`RESUME.md` a été supprimé ce jour, à la racine du dossier `Memoire` et dans
-`jojo` : il datait de mai 2026, décrivait un état dépassé du projet, et
-contenait les identifiants du compte administrateur en clair. Le présent
-document le remplace.
+**Fichiers retirés du dépôt ce jour.**
+
+- `RESUME.md` — daté de mai 2026, il décrivait un état du projet antérieur à la
+  refonte back-end (persistance en `localStorage`, `QueueContext`, absence
+  d'API), et contenait en clair les identifiants du compte administrateur.
+  Deux copies existaient, à la racine de `Memoire` et dans `jojo` ; les deux ont
+  été supprimées. Le présent document le remplace.
+- `FrontEnd/src/PAGES/SplashScreen.jsx` — écran de chargement initial.
+
+Les deux restent récupérables depuis l'historique git.
+
+**Actions hors dépôt.** Le mot de passe du compte administrateur a été changé
+en base de production (§ 7). Le script `seed-categories-admin.js` est versionné
+mais **n'a pas été exécuté** (§ 11).
+
+**Reste non commité** : rien. L'arbre de travail est propre à l'exception des
+ajouts postérieurs à ces deux commits.
 
 ---
 
