@@ -1,9 +1,7 @@
 import './App.css';
-import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
-import SplashScreen from './PAGES/SplashScreen';
 import PrivateRoute from './components/PrivateRoute';
 import Inscription from './PAGES/Inscription';
 import Connexion from './PAGES/Connexion';
@@ -20,14 +18,9 @@ import Tresseuses from './PAGES/Services/Tresseuses';
 import Pressing from './PAGES/Services/Pressing';
 import LavageAuto from './PAGES/Services/LavageAuto';
 import Residence from './PAGES/Services/Residence';
+import AgenceWaves from './PAGES/Services/AgenceWaves';
 
 function App() {
-  const [splashDone, setSplashDone] = useState(false);
-
-  if (!splashDone) {
-    return <SplashScreen onEnter={() => setSplashDone(true)} />;
-  }
-
   return (
     <AuthProvider>
     <SocketProvider>
@@ -63,8 +56,14 @@ function App() {
         <Route path="/service/lavage-auto" element={
           <PrivateRoute roles={['CLIENT', 'ADMIN']}><LavageAuto /></PrivateRoute>
         } />
+
+        {/* Catégories réservées à l'ADMIN — retirées du parcours client
+            et de l'inscription entreprise (cf. TYPES_ADMIN côté serveur) */}
         <Route path="/service/residence" element={
-          <PrivateRoute roles={['CLIENT', 'ADMIN']}><Residence /></PrivateRoute>
+          <PrivateRoute roles={['ADMIN']}><Residence /></PrivateRoute>
+        } />
+        <Route path="/service/agence-waves" element={
+          <PrivateRoute roles={['ADMIN']}><AgenceWaves /></PrivateRoute>
         } />
 
         {/* Routes ENTREPRISE uniquement */}

@@ -6,7 +6,7 @@ import { QRCodeSVG } from "qrcode.react";
 import Navbar from "../Navbar/Navbar";
 import { useSocket } from "../../context/SocketContext";
 import { api } from "../../api";
-import { FaCut, FaCar, FaBuilding } from "react-icons/fa";
+import { FaCut, FaCar, FaBuilding, FaMoneyBillWave } from "react-icons/fa";
 import { GiComb } from "react-icons/gi";
 import { MdLocalLaundryService, MdStorefront } from "react-icons/md";
 
@@ -38,7 +38,8 @@ const CONFIG = {
   tresseuses:    { prefix: "tr", Icon: GiComb,               title: "Tresseuses",         noun: "atelier de tresses" },
   pressings:     { prefix: "pr", Icon: MdLocalLaundryService, title: "Pressing",          noun: "pressing" },
   "lavage-auto": { prefix: "la", Icon: FaCar,                title: "Lavage Automobile",  noun: "centre de lavage" },
-  residence:     { prefix: "re", Icon: FaBuilding,          title: "Résidence",          noun: "agence immobilière" },
+  residence:     { prefix: "re", Icon: FaBuilding,          title: "Résidence",          noun: "agence immobilière", feminin: true },
+  'agence-waves': { prefix: "aw", Icon: FaMoneyBillWave,     title: "Agence Waves",       noun: "agence Wave", feminin: true },
 };
 
 // Statuts DB (majuscules) → libellé + classe CSS (suffixes en minuscules)
@@ -293,7 +294,6 @@ export default function ServicePage({ type }) {
     if (!selectedServiceId) { notify("Veuillez sélectionner un service", "warn"); return; }
     try {
       const t = await api.post("/tickets", { serviceId: selectedServiceId });
-      socketRef.current?.emit("ticket:nouveau", t);
       setMyTicketId(t.id);
       setMyTicket(t);
       notify(`Ticket ${t.numero} émis avec succès ✓`);
@@ -326,7 +326,7 @@ export default function ServicePage({ type }) {
             <section className={`${P}-section`}>
               <div className={`${P}-section__title`}>Choisissez un établissement</div>
               <div className={`${P}-section__subtitle`}>
-                {entreprises.length === 0 ? `Aucun ${cfg.noun} disponible pour le moment.` : "Sélectionnez l'établissement où vous souhaitez être servi"}
+                {entreprises.length === 0 ? `${cfg.feminin ? "Aucune" : "Aucun"} ${cfg.noun} disponible pour le moment.` : "Sélectionnez l'établissement où vous souhaitez être servi"}
               </div>
               <div className={`${P}-services-grid`}>
                 {entreprises.map((ent) => (

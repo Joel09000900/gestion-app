@@ -3,6 +3,7 @@ import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { motion } from "framer-motion";
 import { MdPhotoCamera, MdLocationOn, MdMyLocation, MdOpenInNew, MdEdit, MdCheck, MdDeleteOutline, MdWarningAmber } from "react-icons/md";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import Navbar from "../Navbar/Navbar";
 import "./Entreprise.css";
 import { api } from "../../api";
@@ -147,6 +148,8 @@ export default function Entreprise() {
   const [uploading, setUploading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // Type = source de vérité depuis l'entreprise ; repli sur l'URL le temps du chargement.
   const typeKey = entreprise?.type ?? serviceId;
@@ -305,6 +308,18 @@ export default function Entreprise() {
     };
   }, [refreshTickets, socketRef]);
 
+  // Statistiques : chargées à l'ouverture de l'onglet dédié (endpoint scopé à l'entreprise du compte connecté, non applicable à l'admin/super-entreprise).
+  useEffect(() => {
+    if (activeTab !== "stats" || isAdmin) return;
+    let alive = true;
+    setStatsLoading(true);
+    api.get("/entreprises/stats")
+      .then((data) => { if (alive) setStats(data); })
+      .catch(() => {})
+      .finally(() => { if (alive) setStatsLoading(false); });
+    return () => { alive = false; };
+  }, [activeTab, isAdmin]);
+
   // Périmètre : services du type courant (sinon tous les tickets de l'entreprise)
   const scoped = useMemo(() => {
     const names = catalogue.length > 0 ? new Set(catalogue.map(s => s.nom)) : null;
@@ -360,7 +375,6 @@ export default function Entreprise() {
     if (!ticket) return;
     try {
       await api.patch(`/tickets/${ticket.id}/valider`);          // ticket.id = id DB réel
-      socketRef.current?.emit("ticket:valide", { id: ticket.id });
       showNotif(`Ticket ${ticket.numero} validé ✓ — ajouté à la file`);
       refreshTickets();
     } catch (err) {
@@ -373,7 +387,6 @@ export default function Entreprise() {
     if (!ticket) return;
     try {
       await api.patch(`/tickets/${ticket.id}/refuser`);
-      socketRef.current?.emit("ticket:refuse", { id: ticket.id });
       showNotif(`Ticket ${ticket.numero} refusé`, "warn");
       refreshTickets();
     } catch (err) {
@@ -415,7 +428,6 @@ export default function Entreprise() {
     const next = queue[0];
     try {
       await api.patch(`/tickets/${next.id}/appeler`, { guichet: agent.guichet });
-      socketRef.current?.emit("ticket:appele", { id: next.id, guichet: agent.guichet });
       showNotif(`Ticket ${next.numero} appelé`);
       refreshTickets();
     } catch (err) {
@@ -427,7 +439,6 @@ export default function Entreprise() {
     if (!current) return;
     try {
       await api.patch(`/tickets/${current.id}/terminer`, { statut: "TRAITE" });
-      socketRef.current?.emit("ticket:traite", { id: current.id });
       showNotif(`${current.numero} marqué comme traité ✓`);
       refreshTickets();
     } catch (err) {
@@ -439,7 +450,6 @@ export default function Entreprise() {
     if (!current) return;
     try {
       await api.patch(`/tickets/${current.id}/terminer`, { statut: "ABSENT" });
-      socketRef.current?.emit("ticket:absent", { id: current.id });
       showNotif(`${current.numero} marqué absent`, "warn");
       refreshTickets();
     } catch (err) {
@@ -723,6 +733,11 @@ export default function Entreprise() {
                 Historique
                 <span className="en-tab-count en-tab-count--muted">{historique.length}</span>
               </button>
+              {!isAdmin && (
+                <button className={`en-tab ${activeTab === "stats" ? "en-tab--active" : ""}`} onClick={() => setActiveTab("stats")}>
+                  Statistiques
+                </button>
+              )}
             </div>
 
             {activeTab === "queue" && (
@@ -762,6 +777,76 @@ export default function Entreprise() {
                     historique.map((h) => <HistoriqueItem key={h.id} ticket={h} />)
                   )}
                 </div>
+              </div>
+            )}
+
+            {activeTab === "stats" && !isAdmin && (
+              <div className="en-tab-content en-stats-tab">
+                {!stats ? (
+                  <div className="en-empty">
+                    <div className="en-empty__icon">◎</div>
+                    <div>{statsLoading ? "Chargement des statistiques…" : "Statistiques indisponibles"}</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="en-stats-grid en-stats-grid--tab">
+                      <div className="en-glass-card en-stat-card en-stat-card--accent">
+                        <div className="en-stat-val">{stats.attenteMoyenneMin != null ? `${Math.round(stats.attenteMoyenneMin)} min` : "—"}</div>
+                        <div className="en-stat-label">Attente moyenne</div>
+                      </div>
+                      <div className="en-glass-card en-stat-card">
+                        <div className="en-stat-val">{stats.serviceMoyenMin != null ? `${Math.round(stats.serviceMoyenMin)} min` : "—"}</div>
+                        <div className="en-stat-label">Durée moyenne</div>
+                      </div>
+                      <div className="en-glass-card en-stat-card">
+                        <div className="en-stat-val">{stats.tauxAbsence != null ? `${Math.round(stats.tauxAbsence * 100)}%` : "—"}</div>
+                        <div className="en-stat-label">Taux d'absence</div>
+                      </div>
+                    </div>
+
+                    <div className="en-chart-block">
+                      <h4 className="en-chart-title">Activité — 14 derniers jours</h4>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={stats.parJour}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                          <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} width={28} />
+                          <Tooltip contentStyle={{ background: "#181840", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8 }} labelStyle={{ color: "#fff" }} />
+                          <Bar dataKey="traites" name="Traités" fill="#7b6ef6" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="absents" name="Absents" fill="#ff6b6b" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="en-chart-block">
+                      <h4 className="en-chart-title">Services les plus demandés</h4>
+                      {stats.parService.length === 0 ? (
+                        <div className="en-empty"><div className="en-empty__icon">◎</div><div>Aucune donnée</div></div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height={Math.max(160, stats.parService.length * 34)}>
+                          <BarChart data={stats.parService} layout="vertical" margin={{ left: 8 }}>
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} />
+                            <YAxis type="category" dataKey="service" width={110} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }} />
+                            <Tooltip contentStyle={{ background: "#181840", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8 }} labelStyle={{ color: "#fff" }} />
+                            <Bar dataKey="count" name="Tickets" fill="#6fa3ff" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+
+                    <div className="en-chart-block">
+                      <h4 className="en-chart-title">Heures de pointe</h4>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={stats.heuresPointe}>
+                          <XAxis dataKey="heure" tickFormatter={(h) => `${h}h`} tick={{ fontSize: 10, fill: "rgba(255,255,255,0.6)" }} interval={1} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} width={28} />
+                          <Tooltip contentStyle={{ background: "#181840", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8 }} labelStyle={{ color: "#fff" }} labelFormatter={(h) => `${h}h`} />
+                          <Bar dataKey="count" name="Tickets créés" fill="#40c9a2" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

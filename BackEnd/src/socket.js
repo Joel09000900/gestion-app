@@ -36,21 +36,9 @@ export function initSocket(httpServer) {
       socket.join('jeloft:queue');
     });
 
-    // Relayer les événements tickets vers tous les autres (sauf l'émetteur)
-    const EVENTS = [
-      'ticket:nouveau',
-      'ticket:valide',
-      'ticket:refuse',
-      'ticket:appele',
-      'ticket:traite',
-      'ticket:absent',
-    ];
-
-    EVENTS.forEach((event) => {
-      socket.on(event, (data) => {
-        socket.to('jeloft:queue').emit(event, data);
-      });
-    });
+    // Le canal est descendant : le serveur diffuse (cf. diffuser()), le
+    // navigateur écoute. Aucun événement de ticket n'est accepté en entrée —
+    // un client ne peut donc pas annoncer un appel qui n'a pas eu lieu en base.
 
     socket.on('disconnect', () => {
       console.log(`[Socket] Déconnecté : ${socket.id}`);
@@ -62,4 +50,18 @@ export function initSocket(httpServer) {
 
 export function getIO() {
   return io;
+}
+
+// Diffusion d'un événement de cycle de vie, appelée par les contrôleurs une
+// fois la base à jour. La charge utile se limite à l'identification du ticket
+// et à son nouvel état : le destinataire rappelle l'API pour le détail, ce qui
+// évite de faire circuler l'identité du porteur vers les autres navigateurs.
+export function diffuser(event, ticket) {
+  io?.to('jeloft:queue').emit(event, {
+    ticketId: ticket.id,
+    numero: ticket.numero,
+    statut: ticket.statut,
+    guichet: ticket.guichet ?? null,
+    serviceId: ticket.serviceId,
+  });
 }

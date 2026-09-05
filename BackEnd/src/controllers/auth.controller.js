@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { SERVICE_TYPES, SERVICES_BY_TYPE } from '../data/servicesCatalog.js';
+import { TYPES_INSCRIPTION, SERVICES_BY_TYPE } from '../data/servicesCatalog.js';
 
 const prisma = new PrismaClient();
 
@@ -13,10 +13,21 @@ function signToken(user) {
   );
 }
 
+// Rôles qu'un visiteur peut s'attribuer lui-même à l'inscription.
+// ADMIN en est volontairement exclu : ce compte a un droit d'action sur les
+// tickets de TOUTES les entreprises (cf. peutAgirSurTicket), il ne peut donc
+// pas être créé depuis un formulaire public.
+const ROLES_INSCRIPTION = ['CLIENT', 'ENTREPRISE'];
+
 export async function inscription(req, res) {
   const { nom, email, password, role, type } = req.body;
   if (!nom || !email || !password || !role) {
     return res.status(400).json({ message: 'Tous les champs sont requis' });
+  }
+
+  const roleDemande = String(role).toUpperCase();
+  if (!ROLES_INSCRIPTION.includes(roleDemande)) {
+    return res.status(400).json({ message: 'Rôle invalide' });
   }
 
   const emailTrim = String(email).trim();
@@ -24,8 +35,8 @@ export async function inscription(req, res) {
     return res.status(400).json({ message: 'Adresse email invalide' });
   }
 
-  const isEntreprise = role.toUpperCase() === 'ENTREPRISE';
-  if (isEntreprise && !SERVICE_TYPES.includes(type)) {
+  const isEntreprise = roleDemande === 'ENTREPRISE';
+  if (isEntreprise && !TYPES_INSCRIPTION.includes(type)) {
     return res.status(400).json({ message: 'Type de service invalide ou manquant' });
   }
 
@@ -35,7 +46,7 @@ export async function inscription(req, res) {
 
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { nom, email: emailTrim, password: hash, role: role.toUpperCase() },
+      data: { nom, email: emailTrim, password: hash, role: roleDemande },
       select: { id: true, nom: true, email: true, role: true },
     });
 

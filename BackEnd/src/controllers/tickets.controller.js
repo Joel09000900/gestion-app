@@ -1,16 +1,48 @@
 import { PrismaClient } from '@prisma/client';
+import { diffuser } from '../socket.js';
 
 const prisma = new PrismaClient();
 
-// Vérifie qu'un ticket relève bien de l'entreprise de l'utilisateur connecté.
-// L'ADMIN a tous les droits (bypass). Renvoie true si l'action est autorisée.
-async function peutAgirSurTicket(ticketId, user) {
-  if (user.role === 'ADMIN') return true;
-  const ticket = await prisma.ticket.findFirst({
-    where: { id: ticketId, service: { entreprise: { userId: user.id } } },
-    select: { id: true },
-  });
-  return Boolean(ticket);
+// RG-03 — cycle de vie d'un ticket :
+//   EN_ATTENTE_VALIDATION → ATTENTE → APPELE → TRAITE | ABSENT
+// La table est indexée par action et non par état d'arrivée, car ABSENT a deux
+// origines légitimes qu'il faut distinguer : le refus avant validation et
+// l'absence après appel (le journal Action les sépare, types REFUSE et
+// ACTION_ABSENT). Toute transition absente de cette table est rejetée en 400.
+const TRANSITIONS = {
+  valider: { depuis: ['EN_ATTENTE_VALIDATION'], vers: 'ATTENTE' },
+  refuser: { depuis: ['EN_ATTENTE_VALIDATION'], vers: 'ABSENT' },
+  appeler: { depuis: ['ATTENTE'], vers: 'APPELE' },
+  terminer: { depuis: ['APPELE'] }, // état d'arrivée fourni par la requête : TRAITE | ABSENT
+};
+
+// Contrôle unique en tête des quatre transitions : droit d'agir sur le ticket,
+// puis légalité de la transition depuis son état courant. Renvoie le ticket si
+// tout est bon ; sinon répond elle-même (404 ou 400) et renvoie null.
+//
+// L'ADMIN n'est pas restreint à une entreprise ; tout autre compte ne voit que
+// les tickets de la sienne. Le statut est remonté au passage — la requête lit
+// le ticket de toute façon.
+async function verifierTransition(res, ticketId, user, action, cible) {
+  const where = user.role === 'ADMIN'
+    ? { id: ticketId }
+    : { id: ticketId, service: { entreprise: { userId: user.id } } };
+  const actuel = await prisma.ticket.findFirst({ where, select: { id: true, statut: true } });
+
+  if (!actuel) {
+    res.status(404).json({ message: 'Ticket introuvable' });
+    return null;
+  }
+
+  const { depuis, vers } = TRANSITIONS[action];
+  if (!depuis.includes(actuel.statut)) {
+    res.status(400).json({
+      message: `Transition impossible : un ticket ${actuel.statut} ne peut pas passer à ${cible ?? vers}.`,
+    });
+    return null;
+  }
+
+  return actuel;
 }
 
 export async function prendreTicket(req, res) {
@@ -31,9 +63,11 @@ export async function prendreTicket(req, res) {
     });
     const numero = `${service.prefixe}-${updatedService.compteur}`;
 
-    // Nombre de personnes devant (tickets actifs)
+    // Nombre de personnes devant : la file effective seulement. Les tickets
+    // encore EN_ATTENTE_VALIDATION en sont exclus — une partie sera refusée,
+    // les compter surestimerait la position annoncée au client.
     const devant = await prisma.ticket.count({
-      where: { serviceId, statut: { in: ['EN_ATTENTE_VALIDATION', 'ATTENTE', 'APPELE'] } },
+      where: { serviceId, statut: { in: ['ATTENTE', 'APPELE'] } },
     });
 
     const ticket = await prisma.ticket.create({
@@ -49,6 +83,7 @@ export async function prendreTicket(req, res) {
       include: { service: true, actions: true },
     });
 
+    diffuser('ticket:nouveau', ticket);
     res.status(201).json(ticket);
   } catch (err) {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
@@ -128,9 +163,8 @@ export async function appelTicket(req, res) {
   const { guichet } = req.body;
 
   try {
-    if (!(await peutAgirSurTicket(id, req.user))) {
-      return res.status(404).json({ message: 'Ticket introuvable' });
-    }
+    if (!(await verifierTransition(res, id, req.user, 'appeler'))) return;
+
     const ticket = await prisma.ticket.update({
       where: { id },
       data: {
@@ -139,6 +173,7 @@ export async function appelTicket(req, res) {
         actions: { create: { type: 'ACTION_APPELE', guichet } },
       },
     });
+    diffuser('ticket:appele', ticket);
     res.json(ticket);
   } catch (err) {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
@@ -149,9 +184,8 @@ export async function validerTicket(req, res) {
   const { id } = req.params;
 
   try {
-    if (!(await peutAgirSurTicket(id, req.user))) {
-      return res.status(404).json({ message: 'Ticket introuvable' });
-    }
+    if (!(await verifierTransition(res, id, req.user, 'valider'))) return;
+
     const ticket = await prisma.ticket.update({
       where: { id },
       data: {
@@ -159,6 +193,7 @@ export async function validerTicket(req, res) {
         actions: { create: { type: 'VALIDE' } },
       },
     });
+    diffuser('ticket:valide', ticket);
     res.json(ticket);
   } catch (err) {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
@@ -169,9 +204,10 @@ export async function refuserTicket(req, res) {
   const { id } = req.params;
 
   try {
-    if (!(await peutAgirSurTicket(id, req.user))) {
-      return res.status(404).json({ message: 'Ticket introuvable' });
-    }
+    // Le refus ne vaut qu'avant validation : un ticket déjà entré dans la file
+    // se clôture par /terminer, pas par un refus.
+    if (!(await verifierTransition(res, id, req.user, 'refuser'))) return;
+
     const ticket = await prisma.ticket.update({
       where: { id },
       data: {
@@ -179,6 +215,7 @@ export async function refuserTicket(req, res) {
         actions: { create: { type: 'REFUSE' } },
       },
     });
+    diffuser('ticket:refuse', ticket);
     res.json(ticket);
   } catch (err) {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
@@ -194,9 +231,9 @@ export async function terminerTicket(req, res) {
   }
 
   try {
-    if (!(await peutAgirSurTicket(id, req.user))) {
-      return res.status(404).json({ message: 'Ticket introuvable' });
-    }
+    // Clôture : seul un ticket appelé peut être traité ou déclaré absent.
+    if (!(await verifierTransition(res, id, req.user, 'terminer', statut))) return;
+
     const ticket = await prisma.ticket.update({
       where: { id },
       data: {
@@ -204,6 +241,7 @@ export async function terminerTicket(req, res) {
         actions: { create: { type: statut === 'TRAITE' ? 'ACTION_TRAITE' : 'ACTION_ABSENT' } },
       },
     });
+    diffuser(statut === 'TRAITE' ? 'ticket:traite' : 'ticket:absent', ticket);
     res.json(ticket);
   } catch (err) {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });

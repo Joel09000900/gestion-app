@@ -7,10 +7,14 @@ import * as THREE from "three";
 import NET from "vanta/dist/vanta.net.min";
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaCut, FaCar, FaBuilding } from 'react-icons/fa';
+import { FaCut, FaCar, FaBuilding, FaMoneyBillWave } from 'react-icons/fa';
 import { GiComb } from 'react-icons/gi';
 import { MdLocalLaundryService } from 'react-icons/md';
+import { useAuth } from '../../context/AuthContext';
 
+// `adminSeulement` : catégorie visible du seul administrateur. Elle reste
+// desservie par l'API mais n'est proposée ni aux clients ni à l'inscription
+// des entreprises (cf. TYPES_ADMIN dans BackEnd/src/data/servicesCatalog.js).
 const SERVICES = [
   {
     id: 'coiffure',
@@ -51,6 +55,16 @@ const SERVICES = [
     desc: 'Logement & démarches immobilières',
     orbGradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
     glowColor: 'rgba(245,158,11,0.75)',
+    adminSeulement: true,
+  },
+  {
+    id: 'agence-waves',
+    icon: <FaMoneyBillWave size={26} color="#fff" />,
+    title: 'Agence Waves',
+    desc: 'Dépôt, retrait & paiements mobiles',
+    orbGradient: 'linear-gradient(135deg, #0ea5cf 0%, #1dc8ff 100%)',
+    glowColor: 'rgba(29,200,255,0.75)',
+    adminSeulement: true,
   },
 ];
 
@@ -66,6 +80,10 @@ export default function Service2() {
   const vantaInstance = useRef(null);
   const vantaRef = useRef(null);
   const navigate  = useNavigate();
+  const { user }  = useAuth();
+
+  const isAdmin = user?.role === 'ADMIN';
+  const services = SERVICES.filter((svc) => !svc.adminSeulement || isAdmin);
 
   useEffect(() => {
     if (!vantaInstance.current) {
@@ -112,10 +130,10 @@ export default function Service2() {
             <p className="gc-subtitle">Sélectionnez le service qui vous convient</p>
           </motion.div>
 
-          {/* Grille des 3 services */}
+          {/* Grille des services (les catégories admin sont filtrées en amont) */}
           <div className="client-cards service2-grid">
 
-          {SERVICES.map((svc, i) => (
+          {services.map((svc, i) => (
             <motion.div
               key={svc.id}
               className="client-card"

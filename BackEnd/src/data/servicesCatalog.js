@@ -1,6 +1,15 @@
 // Catalogue des services par type d'entreprise.
 // La clé correspond à Entreprise.type (et aux clés de route /service/:type).
-export const SERVICE_TYPES = ['coiffure', 'tresseuses', 'pressings', 'lavage-auto', 'residence'];
+export const SERVICE_TYPES = ['coiffure', 'tresseuses', 'pressings', 'lavage-auto', 'residence', 'agence-waves'];
+
+// Catégories réservées à l'administrateur. Elles restent servies normalement par
+// l'API — l'admin les consulte, et les entreprises déjà inscrites sous ces types
+// continuent de fonctionner — mais elles ne sont plus proposées à l'inscription
+// ni listées aux clients.
+export const TYPES_ADMIN = ['residence', 'agence-waves'];
+
+// Types qu'une entreprise peut choisir en créant son compte.
+export const TYPES_INSCRIPTION = SERVICE_TYPES.filter((t) => !TYPES_ADMIN.includes(t));
 
 export const SERVICES_BY_TYPE = {
   coiffure: [
@@ -31,5 +40,11 @@ export const SERVICES_BY_TYPE = {
     { nom: 'Dépôt de dossier',   prefixe: 'B', icone: '📁', description: 'Constitution et dépôt de dossier locataire' },
     { nom: 'État des lieux',     prefixe: 'C', icone: '📋', description: 'État des lieux d\'entrée ou de sortie' },
     { nom: 'Signature de bail',  prefixe: 'D', icone: '✍️', description: 'Signature du contrat de bail' },
+  ],
+  'agence-waves': [
+    { nom: 'Dépôt d\'argent',      prefixe: 'A', icone: '💵', description: 'Dépôt d\'espèces sur un compte Wave' },
+    { nom: 'Retrait d\'argent',    prefixe: 'B', icone: '🏧', description: 'Retrait d\'espèces au guichet de l\'agence' },
+    { nom: 'Ouverture de compte',  prefixe: 'C', icone: '📱', description: 'Création et activation d\'un compte Wave' },
+    { nom: 'Paiement de facture',  prefixe: 'D', icone: '🧾', description: 'Règlement de factures et abonnements' },
   ],
 };
