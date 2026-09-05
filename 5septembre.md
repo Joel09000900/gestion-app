@@ -173,6 +173,8 @@ Vérifié avant suppression : les polices Poppins et Orbitron qu'il chargeait pa
 | `residence` / `agence-waves` | **0 entreprise chacune** |
 | Tickets / actions | 28 / 83 |
 
+*(Chiffres relevés avant l'amorçage des catégories réservées, voir § 7.3.)*
+
 Deux enseignements :
 
 - **La faille d'escalade n'a jamais été exploitée.** Aucun compte administrateur
@@ -186,6 +188,25 @@ Deux enseignements :
 L'ancien figurait en clair dans `RESUME.md`, poussé sur un dépôt public.
 Remplacé par une valeur aléatoire de 20 caractères via `reset-password.js`.
 Vérifié : ancien → **401**, nouveau → **200**.
+
+### 7.3. Amorçage des catégories réservées
+
+`seed-categories-admin.js` exécuté sur la base de production. Les deux catégories
+réservées étaient vides et, l'inscription y étant fermée, ne pouvaient plus se
+remplir : « garder Résidence pour l'administrateur » ne gardait rien.
+
+| Catégorie | Entreprise créée | Compte |
+|---|---|---|
+| `residence` | Ivoire Habitat | `contact@ivoire-habitat.ci` |
+| `agence-waves` | Agence Wave Cocody | `contact@agence-wave-cocody.ci` |
+
+Quatre services chacune, repris de `servicesCatalog.js` comme le fait
+l'inscription normale. Les `userId` et `entrepriseId` ont été affichés à
+l'exécution pour permettre un retour arrière.
+
+Vérifié : `GET /api/entreprises?type=residence` et `?type=agence-waves` renvoient
+chacun leur entreprise avec ses quatre services. Base passée de 19 à 21 comptes
+et de 10 à 12 entreprises, sur six types.
 
 ### Décision : pas de réécriture d'historique
 
@@ -221,18 +242,15 @@ Le message de commit détaille les quatre lots séparément.
 
 ## Points de vigilance / dette
 
-### Décision en attente
+### À garder en tête
 
-- **`seed-categories-admin.js` n'a pas été exécuté.** Il crée une entreprise de
-  démonstration et son catalogue pour chaque catégorie réservée — *Ivoire
-  Habitat* et *Agence Wave Cocody* — pour que les pages admin cessent d'être
-  vides. Idempotent, affiche les identifiants créés pour permettre le retour
-  arrière. Il écrit sur la base de production : décision à prendre.
-  ```
-  cd BackEnd && node seed-categories-admin.js "<motDePasse>"
-  ```
+- Les deux entreprises des catégories réservées sont des **entrées de
+  démonstration**, créées par script et non par une inscription réelle. Si le
+  jury demande d'où elles viennent, c'est la réponse.
 - Si de vraies agences Wave doivent pouvoir s'inscrire un jour, il faudra
-  rouvrir le type — ce qui contredit la demande initiale.
+  rouvrir le type dans `TYPES_INSCRIPTION` — ce qui contredit la demande
+  initiale de réserver la catégorie à l'administrateur.
+- Le script reste rejouable : il ne touche pas à une catégorie déjà peuplée.
 
 ### Non vérifié
 

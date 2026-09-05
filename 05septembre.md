@@ -623,23 +623,32 @@ opérations réelles d'une agence de monnaie électronique.
 | `pressings` | 3 — Pressing, Premoci_pressing, Khalys pressing Shop |
 | `lavage-auto` | 3 — First Lavage, Pro Cleaner, Lavage Auto St-Michel |
 | `tresseuses` | 1 — Marie Estelle |
-| `residence` | **0** |
-| `agence-waves` | **0** |
+| `residence` | 1 — Ivoire Habitat |
+| `agence-waves` | 1 — Agence Wave Cocody |
 
-Les deux catégories réservées sont donc **sans contenu**, et l'inscription y
-étant fermée, aucune entreprise ne peut s'y créer d'elle-même : l'administrateur
-qui ouvre ces pages lit « Aucune agence disponible pour le moment ».
+Les deux dernières lignes datent de l'amorçage du 5 septembre. Avant lui, ces
+catégories étaient **vides toutes les deux** : `residence` avait été ajoutée au
+catalogue en juin (commit `468c7d3`) et **n'avait jamais accueilli la moindre
+entreprise** — c'est vraisemblablement la raison pour laquelle elle a été retirée
+du parcours client, où elle apparaissait comme une catégorie sans contenu.
+L'inscription y étant désormais fermée, aucune entreprise n'aurait pu s'y créer
+d'elle-même.
 
-Ce n'est pas une conséquence des modifications du 5 septembre. `residence` a été
-ajoutée au catalogue en juin (commit `468c7d3`) et **n'a jamais accueilli la
-moindre entreprise** — c'est vraisemblablement la raison pour laquelle elle a été
-retirée du parcours client : elle y apparaissait comme une catégorie vide.
+Le script `BackEnd/seed-categories-admin.js` a donc été exécuté sur la base de
+production : il crée, pour chaque catégorie réservée encore vide, un compte
+`ENTREPRISE`, son entreprise et son catalogue de services — exactement ce que
+fait l'inscription normale. Il est idempotent (une catégorie déjà peuplée est
+laissée telle quelle) et affiche les identifiants créés pour permettre de revenir
+en arrière.
 
-Un script d'amorçage, `BackEnd/seed-categories-admin.js`, est prêt à créer une
-entreprise de démonstration par catégorie réservée, avec son catalogue de
-services. Il est idempotent (une catégorie déjà peuplée est laissée telle quelle)
-et affiche les identifiants créés pour permettre de revenir en arrière. **Il n'a
-pas été exécuté** : il écrit sur la base de production.
+| Catégorie | Entreprise créée | Services |
+|---|---|---|
+| `residence` | Ivoire Habitat | Visite de logement, Dépôt de dossier, État des lieux, Signature de bail |
+| `agence-waves` | Agence Wave Cocody | Dépôt d'argent, Retrait d'argent, Ouverture de compte, Paiement de facture |
+
+Vérifié après exécution : `GET /api/entreprises?type=residence` et
+`?type=agence-waves` renvoient chacun leur entreprise avec ses quatre services.
+Les deux pages réservées affichent désormais du contenu à l'administrateur.
 
 ---
 
@@ -656,7 +665,7 @@ Huit modifications, toutes vérifiées par exécution ou par compilation.
 | 5 | **Catégories réservées à l'administrateur** — Résidence retirée du client et de l'inscription, Agence Waves créée | `servicesCatalog.js`, `auth.controller.js`, `App.js`, `Inscription.js`, `Service2.jsx`, `ServicePage.jsx`, `AgenceWaves.jsx/.css` |
 | 6 | **Écran d'accueil animé supprimé** — la barre de chargement de 2,5 s puis 0,8 s de transition disparaissent ; `/` ouvre directement sur l'accueil | `App.js`, suppression de `SplashScreen.jsx` |
 | 7 | **Mot de passe administrateur changé** — l'ancien figurait en clair dans `RESUME.md`, sur un dépôt public (§ 7) | base de production, via `reset-password.js` |
-| 8 | **Script d'amorçage des catégories réservées** ajouté, non exécuté (§ 11) | `seed-categories-admin.js` |
+| 8 | **Catégories réservées amorcées** — une entreprise de démonstration et son catalogue créés pour `residence` et `agence-waves`, jusque-là vides (§ 11) | `seed-categories-admin.js`, base de production |
 
 Corrections mineures au passage : le message d'état vide accordait mal au féminin
 (« Aucun agence immobilière »), et l'import `FaBuilding` devenu inutile dans
@@ -671,8 +680,10 @@ Corrections mineures au passage : le message d'état vide accordait mal au fémi
 - Canal Socket.IO : un client anonyme émettant un faux `ticket:appele` n'est
   relayé à personne ; `diffuser()` appelé comme le fait un contrôleur atteint bien
   les navigateurs abonnés.
-- Base de production interrogée en lecture : 19 comptes, un seul `ADMIN`,
-  10 entreprises réparties sur quatre types, 28 tickets et 83 actions.
+- Base de production interrogée en lecture avant intervention : 19 comptes, un
+  seul `ADMIN`, 10 entreprises réparties sur quatre types, 28 tickets, 83 actions.
+- Après amorçage : 21 comptes, 12 entreprises réparties sur six types, les deux
+  catégories réservées renvoyant bien leur entreprise et ses quatre services.
 - Rotation du mot de passe administrateur confirmée : ancien mot de passe en
   401, nouveau en 200.
 - **Non vérifié de bout en bout** : le refus 400 de RG-03 sur un ticket réel.
@@ -706,9 +717,10 @@ recense ce que l'application **ne fait pas**, ou fait imparfaitement.
 6. **La suppression d'un ticket par le client est physique**, sans statut
    `ANNULE` : l'historique et le journal d'audit perdent la trace.
 7. **Refus et absence sont indiscernables** dans l'indicateur affiché (§ 9).
-8. **Les deux catégories réservées à l'administrateur sont vides** et ne peuvent
-   pas se remplir, l'inscription y étant fermée (§ 11). `residence` n'a jamais
-   accueilli d'entreprise depuis sa création en juin.
+8. **Les catégories réservées ne peuvent pas se remplir d'elles-mêmes**,
+   l'inscription y étant fermée (§ 11). Chacune ne contient qu'une entreprise de
+   démonstration, créée par script le 5 septembre ; une vraie agence Wave ne
+   pourrait pas s'inscrire sans rouvrir le type.
 
 ### Techniques
 
@@ -811,9 +823,11 @@ message de commit détaille les quatre lots séparément.
 
 Les deux restent récupérables depuis l'historique git.
 
-**Actions hors dépôt.** Le mot de passe du compte administrateur a été changé
-en base de production (§ 7). Le script `seed-categories-admin.js` est versionné
-mais **n'a pas été exécuté** (§ 11).
+**Actions hors dépôt.** Deux écritures ont été faites sur la base de production :
+le mot de passe du compte administrateur a été changé (§ 7), et les deux
+catégories réservées ont été amorcées par `seed-categories-admin.js` (§ 11).
+Les identifiants des comptes créés ont été relevés à l'exécution pour permettre
+un retour arrière.
 
 **Reste non commité** : rien. L'arbre de travail est propre à l'exception des
 ajouts postérieurs à ces deux commits.
