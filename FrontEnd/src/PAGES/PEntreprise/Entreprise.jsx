@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
 import { motion } from "framer-motion";
 import { MdPhotoCamera, MdLocationOn, MdMyLocation, MdOpenInNew, MdEdit, MdCheck, MdDeleteOutline, MdWarningAmber } from "react-icons/md";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
@@ -16,6 +14,7 @@ import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { useVanta } from '../../hooks/useVanta';
 
 // Fix des icônes Leaflet sous Webpack/CRA (sinon le marqueur n'apparaît pas).
 delete L.Icon.Default.prototype._getIconUrl;
@@ -24,6 +23,19 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
+
+// Neutres des graphiques Recharts. Recharts ecrit ces couleurs dans les
+// attributs SVG, ou var() n'est pas resolu de facon fiable : on les fixe ici.
+// Les graphiques vivent dans une section (.en-glass-card), noire dans les deux
+// themes -> la palette ne depend pas du theme. Les couleurs des barres
+// (violet, rouge, bleu, vert) lisent sur noir et ne changent pas.
+const GRAPH = {
+  grille:     "rgba(255,255,255,0.08)",
+  graduation: "rgba(255,255,255,0.6)",
+  infobulle:  "#16161a",
+  bordure:    "rgba(255,255,255,0.15)",
+  encre:      "#ffffff",
+};
 
 // Centre par défaut quand aucune position n'est connue (Abidjan).
 const DEFAULT_CENTER = { lat: 5.34812, lon: -4.01266 };
@@ -127,8 +139,8 @@ export default function Entreprise() {
   const { socketRef } = useSocket();
   const navigate = useNavigate();
 
-  const vantaRef = useRef(null);
-  const vantaInstance = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta();
 
   const [agent] = useState({
     initiales: user?.nom?.slice(0, 2).toUpperCase() ?? "EN",
@@ -141,7 +153,7 @@ export default function Entreprise() {
   const [activeTab, setActiveTab] = useState("queue");
   const [notification, setNotification] = useState(null);
   const [dbTickets, setDbTickets] = useState([]);
-  const [hiddenHistIds, setHiddenHistIds] = useState(() => new Set());
+  const [clearingHistory, setClearingHistory] = useState(false);
 
   const fileInputRef = useRef(null);
   const [entreprise, setEntreprise] = useState(null);
@@ -299,7 +311,7 @@ export default function Entreprise() {
     refreshTickets();
     const s = socketRef.current;
     const onChange = () => refreshTickets();
-    const events = ["ticket:nouveau", "ticket:valide", "ticket:refuse", "ticket:appele", "ticket:traite", "ticket:absent"];
+    const events = ["ticket:nouveau", "ticket:valide", "ticket:refuse", "ticket:appele", "ticket:traite", "ticket:absent", "tickets:purges"];
     if (s) events.forEach(e => s.on(e, onChange));
     const poll = setInterval(refreshTickets, 10000);
     return () => {
@@ -355,10 +367,10 @@ export default function Entreprise() {
 
   const historique = useMemo(
     () => scoped
-      .filter(t => (t.statut === "TRAITE" || t.statut === "ABSENT") && !hiddenHistIds.has(t.id))
+      .filter(t => t.statut === "TRAITE" || t.statut === "ABSENT")
       .slice().reverse().slice(0, 20)
       .map(t => ({ id: t.id, numero: t.numero, service: t.service?.nom ?? "Service", statut: t.statut === "TRAITE" ? "traite" : "absent", heure: fmtHeure(t.updatedAt), clientNom: t.user?.nom, clientAvatar: t.user?.avatar })),
-    [scoped, hiddenHistIds]
+    [scoped]
   );
 
   const traites = useMemo(() => scoped.filter(t => t.statut === "TRAITE").length, [scoped]);
@@ -394,29 +406,15 @@ export default function Entreprise() {
     }
   };
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current, THREE,
-        mouseControls: true, touchControls: true, gyroControls: false,
-        minHeight: 800.0, minWidth: 150.0, scale: 1.0, scaleMobile: 1.0,
-        color: 0xffffff, backgroundColor: 0x26266d,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
+  // Le chrono ne repart qu'au changement de ticket, pas à chaque rafraîchissement de l'objet.
+  const currentId = current?.id;
   useEffect(() => {
-    if (!current) return;
+    if (!currentId) return;
     setElapsed(0);
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(interval);
-  }, [current?.id]);
+  }, [currentId]);
 
   const showNotif = (msg, type = "success") => {
     setNotification({ msg, type });
@@ -457,17 +455,30 @@ export default function Entreprise() {
     }
   };
 
-  // L'historique est de la donnée DB partagée avec les clients :
-  // on le masque de la vue (session) au lieu de supprimer les tickets des clients.
-  const handleClearHistory = () => {
-    if (historique.length === 0) return;
-    if (!window.confirm("Masquer l'historique des tickets traités et absents de cette vue ?")) return;
-    setHiddenHistIds(prev => {
-      const next = new Set(prev);
-      historique.forEach(h => next.add(h.id));
-      return next;
-    });
-    showNotif("Historique masqué de la vue");
+  // Suppression réelle en base, et non plus un simple masquage de la vue.
+  // Deux portées selon le compte connecté :
+  //   ENTREPRISE → ses propres services, tickets traités et absents seulement.
+  //                Les tickets encore en cours sont épargnés : un client ne doit
+  //                pas voir disparaître celui sur lequel il attend.
+  //   ADMIN      → remise à zéro de toute la plateforme (tous statuts) et des
+  //                compteurs de numérotation ; il n'a pas d'entreprise à lui.
+  const handleClearHistory = async () => {
+    const message = isAdmin
+      ? "Supprimer définitivement TOUS les tickets de la plateforme et remettre la numérotation à zéro ?\n\nCette action est irréversible."
+      : "Supprimer définitivement l'historique des tickets traités et absents de votre entreprise ?\n\nCette action est irréversible.";
+    if (!window.confirm(message)) return;
+
+    setClearingHistory(true);
+    try {
+      const res = await api.delete(isAdmin ? "/tickets/all" : "/tickets/entreprise/historique");
+      const n = res?.tickets ?? res?.count ?? 0;
+      showNotif(n > 0 ? `${n} ticket${n > 1 ? "s" : ""} supprimé${n > 1 ? "s" : ""}` : "Aucun ticket à supprimer");
+      refreshTickets();
+    } catch (err) {
+      showNotif(`Échec de la suppression : ${err.message}`, "warn");
+    } finally {
+      setClearingHistory(false);
+    }
   };
 
   const formatElapsed = (s) => s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
@@ -494,11 +505,10 @@ export default function Entreprise() {
               </div>
             )}
 
-            <div className="en-val-icon">🎫</div>
             <div className="en-val-label">Nouveau ticket</div>
             <div className="en-val-numero">{pendingValidations[0].numero}</div>
             <div className="en-val-service">
-              {pendingValidations[0].service?.icone} {pendingValidations[0].service?.nom}
+              {pendingValidations[0].service?.nom}
             </div>
 
             <div className="en-val-info">
@@ -764,9 +774,12 @@ export default function Entreprise() {
               <div className="en-tab-content">
                 <div className="en-queue-bar">
                   <span className="en-queue-info">Tickets traités cette session</span>
-                  {historique.length > 0 && (
-                    <button className="en-clear-btn" onClick={handleClearHistory}>
-                      <MdDeleteOutline size={15} /> Effacer l'historique
+                  {(isAdmin ? dbTickets.length > 0 : historique.length > 0) && (
+                    <button className="en-clear-btn" onClick={handleClearHistory} disabled={clearingHistory}>
+                      <MdDeleteOutline size={15} />{" "}
+                      {clearingHistory
+                        ? "Suppression…"
+                        : isAdmin ? "Vider la plateforme" : "Supprimer l'historique"}
                     </button>
                   )}
                 </div>
@@ -808,10 +821,10 @@ export default function Entreprise() {
                       <h4 className="en-chart-title">Activité — 14 derniers jours</h4>
                       <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={stats.parJour}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                          <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} />
-                          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} width={28} />
-                          <Tooltip contentStyle={{ background: "#181840", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8 }} labelStyle={{ color: "#fff" }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={GRAPH.grille} vertical={false} />
+                          <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} tick={{ fontSize: 11, fill: GRAPH.graduation }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: GRAPH.graduation }} width={28} />
+                          <Tooltip contentStyle={{ background: GRAPH.infobulle, border: `1px solid ${GRAPH.bordure}`, borderRadius: 8 }} labelStyle={{ color: GRAPH.encre }} />
                           <Bar dataKey="traites" name="Traités" fill="#7b6ef6" radius={[4, 4, 0, 0]} />
                           <Bar dataKey="absents" name="Absents" fill="#ff6b6b" radius={[4, 4, 0, 0]} />
                         </BarChart>
@@ -825,9 +838,9 @@ export default function Entreprise() {
                       ) : (
                         <ResponsiveContainer width="100%" height={Math.max(160, stats.parService.length * 34)}>
                           <BarChart data={stats.parService} layout="vertical" margin={{ left: 8 }}>
-                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} />
-                            <YAxis type="category" dataKey="service" width={110} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }} />
-                            <Tooltip contentStyle={{ background: "#181840", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8 }} labelStyle={{ color: "#fff" }} />
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: GRAPH.graduation }} />
+                            <YAxis type="category" dataKey="service" width={110} tick={{ fontSize: 11, fill: GRAPH.graduation }} />
+                            <Tooltip contentStyle={{ background: GRAPH.infobulle, border: `1px solid ${GRAPH.bordure}`, borderRadius: 8 }} labelStyle={{ color: GRAPH.encre }} />
                             <Bar dataKey="count" name="Tickets" fill="#6fa3ff" radius={[0, 4, 4, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
@@ -838,9 +851,9 @@ export default function Entreprise() {
                       <h4 className="en-chart-title">Heures de pointe</h4>
                       <ResponsiveContainer width="100%" height={180}>
                         <BarChart data={stats.heuresPointe}>
-                          <XAxis dataKey="heure" tickFormatter={(h) => `${h}h`} tick={{ fontSize: 10, fill: "rgba(255,255,255,0.6)" }} interval={1} />
-                          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} width={28} />
-                          <Tooltip contentStyle={{ background: "#181840", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8 }} labelStyle={{ color: "#fff" }} labelFormatter={(h) => `${h}h`} />
+                          <XAxis dataKey="heure" tickFormatter={(h) => `${h}h`} tick={{ fontSize: 10, fill: GRAPH.graduation }} interval={1} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: GRAPH.graduation }} width={28} />
+                          <Tooltip contentStyle={{ background: GRAPH.infobulle, border: `1px solid ${GRAPH.bordure}`, borderRadius: 8 }} labelStyle={{ color: GRAPH.encre }} labelFormatter={(h) => `${h}h`} />
                           <Bar dataKey="count" name="Tickets créés" fill="#40c9a2" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>

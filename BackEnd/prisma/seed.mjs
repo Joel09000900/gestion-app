@@ -29,9 +29,9 @@ console.log(' - henoc  :', henoc ? henoc.id : '❌ introuvable');
 if (joj) {
   await prisma.service.createMany({
     data: [
-      { nom: 'Coupe homme',  prefixe: 'A', icone: '💇🏿‍♂️', description: 'Coupe classique, dégradé, barbe',   entrepriseId: joj.id },
-      { nom: 'Coupe enfant', prefixe: 'B', icone: '🧒🏿', description: 'Coupe adaptée aux plus petits',     entrepriseId: joj.id },
-      { nom: 'Coloration',   prefixe: 'C', icone: '🎨', description: 'Couleur, mèches, balayage',          entrepriseId: joj.id },
+      { nom: 'Coupe homme',  prefixe: 'A', description: 'Coupe classique, dégradé, barbe',   entrepriseId: joj.id },
+      { nom: 'Coupe enfant', prefixe: 'B', description: 'Coupe adaptée aux plus petits',     entrepriseId: joj.id },
+      { nom: 'Coloration',   prefixe: 'C', description: 'Couleur, mèches, balayage',          entrepriseId: joj.id },
     ],
     skipDuplicates: true,
   });
@@ -43,10 +43,10 @@ if (joj) {
 if (jojo8) {
   await prisma.service.createMany({
     data: [
-      { nom: 'Défrissage',   prefixe: 'A', icone: '💆🏿‍♀️', description: 'Lissage et défrisage professionnel',     entrepriseId: jojo8.id },
-      { nom: 'Tresses',      prefixe: 'B', icone: '👩🏿‍🦱', description: 'Box braids, cornrows, twists sur mesure', entrepriseId: jojo8.id },
-      { nom: 'Tissage',      prefixe: 'C', icone: '🧵', description: 'Pose de tissage cousu ou clipsé',         entrepriseId: jojo8.id },
-      { nom: 'Mèche longue', prefixe: 'D', icone: '📏', description: 'Rajout de mèches longues, effet volume',  entrepriseId: jojo8.id },
+      { nom: 'Défrissage',   prefixe: 'A', description: 'Lissage et défrisage professionnel',     entrepriseId: jojo8.id },
+      { nom: 'Tresses',      prefixe: 'B', description: 'Box braids, cornrows, twists sur mesure', entrepriseId: jojo8.id },
+      { nom: 'Tissage',      prefixe: 'C', description: 'Pose de tissage cousu ou clipsé',         entrepriseId: jojo8.id },
+      { nom: 'Mèche longue', prefixe: 'D', description: 'Rajout de mèches longues, effet volume',  entrepriseId: jojo8.id },
     ],
     skipDuplicates: true,
   });
@@ -58,10 +58,10 @@ if (jojo8) {
 if (henoc) {
   await prisma.service.createMany({
     data: [
-      { nom: 'Lavage express', prefixe: 'A', icone: '🫧', description: 'Lavage rapide en 30 minutes',                  entrepriseId: henoc.id },
-      { nom: 'Lavage normal',  prefixe: 'B', icone: '👕', description: 'Lavage complet et soigneux',                    entrepriseId: henoc.id },
-      { nom: 'Repassage',      prefixe: 'C', icone: '🌀', description: 'Repassage professionnel à la vapeur',           entrepriseId: henoc.id },
-      { nom: 'Nettoyage sec',  prefixe: 'D', icone: '🧴', description: 'Nettoyage délicat pour vêtements fragiles',    entrepriseId: henoc.id },
+      { nom: 'Lavage express', prefixe: 'A', description: 'Lavage rapide en 30 minutes',                  entrepriseId: henoc.id },
+      { nom: 'Lavage normal',  prefixe: 'B', description: 'Lavage complet et soigneux',                    entrepriseId: henoc.id },
+      { nom: 'Repassage',      prefixe: 'C', description: 'Repassage professionnel à la vapeur',           entrepriseId: henoc.id },
+      { nom: 'Nettoyage sec',  prefixe: 'D', description: 'Nettoyage délicat pour vêtements fragiles',    entrepriseId: henoc.id },
     ],
     skipDuplicates: true,
   });

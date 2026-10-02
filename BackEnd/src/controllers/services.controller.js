@@ -37,8 +37,11 @@ export async function listerServices(req, res) {
   }
 }
 
+// `icone` n'est plus lu depuis la requête : les services ne portent plus de
+// pictogramme (choix d'interface — identité visuelle sobre). La colonne reste
+// en base, vide, pour ne pas casser les enregistrements existants.
 export async function creerService(req, res) {
-  const { nom, prefixe, icone, description } = req.body;
+  const { nom, prefixe, description } = req.body;
   if (!nom || !prefixe) return res.status(400).json({ message: 'nom et prefixe requis' });
 
   try {
@@ -48,7 +51,7 @@ export async function creerService(req, res) {
     if (!entreprise) return res.status(403).json({ message: 'Entreprise introuvable' });
 
     const service = await prisma.service.create({
-      data: { nom, prefixe: prefixe.toUpperCase(), icone, description, entrepriseId: entreprise.id },
+      data: { nom, prefixe: prefixe.toUpperCase(), description, entrepriseId: entreprise.id },
     });
     res.status(201).json(service);
   } catch (err) {

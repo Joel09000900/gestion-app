@@ -3,13 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Connexion.scss';
 
 import Navbar from './Navbar/Navbar';
-import React, { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineMail, AiOutlineLock } from 'react-icons/ai';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useVanta } from '../hooks/useVanta';
 
 
 
@@ -18,32 +17,9 @@ function Connexion() {
   const navigate = useNavigate();
 
   /* ── Vanta background ── */
-  const vantaInstance = useRef(null);
-  const vantaRef = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta();
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current,
-        THREE,
-        mouseControls: true,
-        touchControls: true,
-        gyroControls: false,
-        minHeight: 800.0,
-        minWidth: 150.0,
-        scale: 1.0,
-        scaleMobile: 1.0,
-        color: 0xffffff,
-        backgroundColor: 0x26266d,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
   /* ── État du formulaire ── */
   const [formData, setFormData] = useState({ email: '', motDePasse: '' });

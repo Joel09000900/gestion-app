@@ -13,7 +13,7 @@ export async function listerEntreprisesParType(req, res) {
         id: true, nom: true, description: true, type: true, avatar: true, lat: true, lng: true,
         services: {
           select: {
-            id: true, nom: true, prefixe: true, icone: true, description: true,
+            id: true, nom: true, prefixe: true, description: true,
             _count: { select: { tickets: { where: { statut: { in: ['ATTENTE', 'APPELE'] } } } } },
           },
           orderBy: { prefixe: 'asc' },

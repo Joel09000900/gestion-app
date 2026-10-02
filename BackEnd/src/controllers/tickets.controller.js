@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { diffuser } from '../socket.js';
+import { diffuser, diffuserPurge } from '../socket.js';
 
 const prisma = new PrismaClient();
 
@@ -108,7 +108,7 @@ export async function tousLesTicketsAdmin(req, res) {
   try {
     const tickets = await prisma.ticket.findMany({
       include: {
-        service: { select: { nom: true, icone: true, entreprise: { select: { nom: true, type: true } } } },
+        service: { select: { nom: true, entreprise: { select: { nom: true, type: true } } } },
         user: { select: { nom: true, avatar: true } },
       },
       orderBy: { createdAt: 'asc' },
@@ -119,11 +119,74 @@ export async function tousLesTicketsAdmin(req, res) {
   }
 }
 
+// Statuts terminaux : le ticket a fini son cycle, il n'est plus qu'une ligne
+// d'historique. Les purges s'y limitent quand un ticket vivant (ATTENTE,
+// APPELE, EN_ATTENTE_VALIDATION) appartient encore au parcours d'un client.
+const STATUTS_HISTORIQUE = ['TRAITE', 'ABSENT'];
+
 export async function supprimerHistorique(req, res) {
   try {
     const { count } = await prisma.ticket.deleteMany({
-      where: { userId: req.user.id, statut: { in: ['TRAITE', 'ABSENT'] } },
+      where: { userId: req.user.id, statut: { in: STATUTS_HISTORIQUE } },
     });
+    res.json({ message: 'Historique supprimé', count });
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur', error: err.message });
+  }
+}
+
+// Admin : remise à zéro de toute la plateforme — tous les tickets, tous
+// statuts confondus, et le journal Action qui part en cascade. Les compteurs de
+// service repartent de 0 pour que la numérotation recommence à A1, B1, C1…
+// Équivalent en ligne du script purge-tickets.js.
+export async function purgerToutAdmin(req, res) {
+  try {
+    const [actions, tickets, compteurs] = await prisma.$transaction([
+      prisma.action.deleteMany({}),
+      prisma.ticket.deleteMany({}),
+      prisma.service.updateMany({ data: { compteur: 0 } }),
+    ]);
+
+    // Les tableaux de bord ouverts (client, entreprise, admin) rechargent sur
+    // cet événement : sans lui, ils continueraient d'afficher des tickets morts.
+    diffuserPurge({ portee: 'plateforme', tickets: tickets.count });
+
+    res.json({
+      message: 'Plateforme remise à zéro',
+      tickets: tickets.count,
+      actions: actions.count,
+      compteursRemisAZero: compteurs.count,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur', error: err.message });
+  }
+}
+
+// Entreprise : efface l'historique de ses propres services (tickets traités et
+// absents). Les tickets encore en cours sont épargnés — un client ne doit pas
+// voir disparaître le ticket sur lequel il attend. L'ADMIN passe ici aussi
+// quand il consulte le tableau de bord entreprise ; faute d'entreprise
+// rattachée à son compte, il reçoit un 404 explicite et utilise sa purge
+// globale.
+export async function purgerHistoriqueEntreprise(req, res) {
+  try {
+    const entreprise = await prisma.entreprise.findUnique({
+      where: { userId: req.user.id },
+      select: { id: true },
+    });
+    if (!entreprise) {
+      return res.status(404).json({ message: 'Aucune entreprise rattachée à ce compte' });
+    }
+
+    const { count } = await prisma.ticket.deleteMany({
+      where: {
+        service: { entrepriseId: entreprise.id },
+        statut: { in: STATUTS_HISTORIQUE },
+      },
+    });
+
+    diffuserPurge({ portee: 'entreprise', entrepriseId: entreprise.id, tickets: count });
+
     res.json({ message: 'Historique supprimé', count });
   } catch (err) {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });

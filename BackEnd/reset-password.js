@@ -6,6 +6,7 @@
 // Le mot de passe est passé en argument : il ne traîne pas en clair dans le code.
 // Cible la BD définie par DATABASE_URL dans .env.
 
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 

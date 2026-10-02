@@ -1,0 +1,170 @@
+/* ============================================================
+   theme.css — jetons de couleur, mode nuit / mode jour
+   ============================================================
+
+   Parti pris : les SECTIONS SONT NOIRES DANS LES DEUX THÈMES. Seuls le fond
+   de page et le filet Vanta changent.
+     mode nuit → fond noir,  filet blanc,  sections noires, texte clair dedans
+     mode jour → fond blanc, filet violet, sections noires, texte clair dedans
+
+   En mode nuit, des sections noires sur un fond noir ne tiennent que par deux
+   choses : leur bordure claire, et le fait qu'elles masquent le filet animé
+   derrière elles. C'est pour ça que le fond de page est un noir pur (#000) et
+   les sections un noir très légèrement décollé — assez pour exister, pas assez
+   pour cesser de lire « noir ».
+
+   Il y a DEUX encres, et c'est tout le sujet de ce fichier :
+     --ink          encre posée sur le FOND DE PAGE  (contraste avec --bg)
+     --surface-ink  encre posée DANS UNE SECTION     (toujours claire, puisque
+                    les sections sont noires dans les deux thèmes)
+
+   Les feuilles de style n'écrivent que `--ink`. Le bloc « sections » en bas
+   redéclare `--ink` sur chaque conteneur de section : comme les propriétés
+   personnalisées sont héritées, tout le contenu de la section reçoit
+   automatiquement la bonne encre, sans toucher aux 600 règles existantes.
+
+   Pourquoi des canaux RVB séparés (--ink-rgb) : les feuilles utilisent une
+   quarantaine d'opacités différentes (.08 pour un fond discret, .13 pour une
+   bordure, .45 pour un texte secondaire…). Une variable par opacité serait
+   ingérable ; on expose les canaux et chaque règle garde son alpha :
+       rgba(var(--ink-rgb), .45)
+
+   Ce qui n'est PAS jetonisé, volontairement : le texte posé sur un fond
+   coloré (bouton en dégradé, pastille de statut, avatar). Il doit rester
+   blanc dans les deux thèmes, sinon le contraste casse. Les 75 règles
+   concernées gardent leur `#fff` littéral. Même raison pour les ombres
+   `rgba(0,0,0,a)` : une ombre reste sombre sur fond clair. */
+
+:root {
+  /* ── Sections : identiques dans les deux thèmes, donc déclarées une fois ── */
+  --surface:          rgba(22, 22, 26, .92);  /* cartes et panneaux */
+  --surface-1:        #0d0d10;        /* grand conteneur : un ton sous les cartes */
+  --surface-2:        #16161a;        /* dégradé de modale */
+
+  --surface-ink:      #ffffff;        /* encre DANS une section */
+  --surface-ink-rgb:  255, 255, 255;
+
+  /* ── Mode nuit (défaut : aucun flash au chargement) ── */
+  --bg:               #000000;        /* fond de page, sous le filet Vanta */
+
+  --ink:              #ffffff;        /* encre SUR LE FOND DE PAGE */
+  --ink-rgb:          255, 255, 255;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="jour"] {
+  /* Seuls le fond de page et son encre basculent. Les sections restent noires,
+     le filet Vanta passe au violet (cf. hooks/useVanta.js). */
+  --bg:               #ffffff;
+
+  --ink:              #101014;
+  --ink-rgb:          16, 16, 20;
+
+  color-scheme: light;
+}
+
+/* Le fond de page suit le thème même là où le canvas Vanta ne couvre pas
+   (marges de défilement, pages sans Vanta). */
+body {
+  background: var(--bg);
+  color: var(--ink);
+  transition: background-color .25s ease, color .25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body { transition: none; }
+}
+
+/* ============================================================
+   Sections — l'encre s'inverse à l'intérieur
+   ============================================================
+
+   Liste dérivée du code, pas écrite à la main : ce sont tous les sélecteurs
+   dont le `background` est un jeton de surface. Un conteneur qui devient une
+   section doit être ajouté ici, sinon son contenu gardera l'encre du fond de
+   page et deviendra illisible.
+
+   Les variables dérivées (--ad-muted, --co-glass-b…) sont redéclarées avec
+   elles : définies sur :root dans les feuilles de page, leur valeur y est déjà
+   substituée avec l'encre du fond de page. Les recalculer ici est le seul
+   moyen de les faire suivre l'encre de section. */
+.rm-modal,
+.glass-card,
+.nav-bar,
+.ad-header,
+.ad-subnav,
+.ad-section,
+.ad-panel,
+.ad-kpi-card,
+.ad-barchart__bar-tooltip,
+.ad-agent-kpi,
+.ad-agent-card,
+.client-card,
+.cl-section,
+.cl-profile-card,
+.en-glass-card,
+.en-val-modal,
+.aw-header,
+.aw-main,
+.aw-service-card,
+.aw-queue-row,
+.aw-ticket-placeholder,
+.aw-ticket-emis,
+.aw-legend,
+.co-header,
+.co-main,
+.co-service-card,
+.co-queue-row,
+.co-ticket-placeholder,
+.co-ticket-emis,
+.co-legend,
+.la-header,
+.la-main,
+.la-service-card,
+.la-queue-row,
+.la-ticket-placeholder,
+.la-ticket-emis,
+.la-legend,
+.pr-header,
+.pr-main,
+.pr-service-card,
+.pr-queue-row,
+.pr-ticket-placeholder,
+.pr-ticket-emis,
+.pr-legend,
+.re-header,
+.re-main,
+.re-service-card,
+.re-queue-row,
+.re-ticket-placeholder,
+.re-ticket-emis,
+.re-legend,
+.tr-header,
+.tr-main,
+.tr-service-card,
+.tr-queue-row,
+.tr-ticket-placeholder,
+.tr-ticket-emis,
+.tr-legend {
+  --ink:     var(--surface-ink);
+  --ink-rgb: var(--surface-ink-rgb);
+
+  /* Variables dérivées des feuilles de page, recalculées sur l'encre de section. */
+  --ad-muted:   rgba(var(--surface-ink-rgb), .45);
+  --ad-glass-b: rgba(var(--surface-ink-rgb), .13);
+  --aw-muted:   rgba(var(--surface-ink-rgb), .45);
+  --aw-glass-b: rgba(var(--surface-ink-rgb), .13);
+  --co-muted:   rgba(var(--surface-ink-rgb), .45);
+  --co-glass-b: rgba(var(--surface-ink-rgb), .13);
+  --la-muted:   rgba(var(--surface-ink-rgb), .45);
+  --la-glass-b: rgba(var(--surface-ink-rgb), .13);
+  --pr-muted:   rgba(var(--surface-ink-rgb), .45);
+  --pr-glass-b: rgba(var(--surface-ink-rgb), .13);
+  --re-muted:   rgba(var(--surface-ink-rgb), .45);
+  --re-glass-b: rgba(var(--surface-ink-rgb), .13);
+  --tr-muted:   rgba(var(--surface-ink-rgb), .45);
+  --tr-glass-b: rgba(var(--surface-ink-rgb), .13);
+
+  color: var(--ink);
+}

@@ -2,11 +2,10 @@ import '../App.css';
 import './acceuil.css';
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from 'react-router-dom';
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import Navbar from './Navbar/Navbar';
+import { useVanta } from '../hooks/useVanta';
 
 const cardAnim = (delay) => ({
   hidden:  { opacity: 0, y: 45, scale: 0.95 },
@@ -23,32 +22,10 @@ export default function Acceuil() {
   const showEntreprise = role === 'ENTREPRISE' || role === 'ADMIN';
   const showAdmin      = role === 'ADMIN';
 
-  const vantaRef = useRef(null);
-  const vantaInstance = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta({ points: 12, maxDistance: 22, spacing: 18 });
   const [aboutOpen, setAboutOpen] = useState(false);
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current,
-        THREE,
-        mouseControls: true,
-        touchControls: true,
-        gyroControls: false,
-        color: 0xffffff,
-        backgroundColor: 0x12125e,
-        points: 12,
-        maxDistance: 22,
-        spacing: 18,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
   return (
     <div className="ac-root" ref={vantaRef}>
@@ -73,7 +50,7 @@ export default function Acceuil() {
 
         {/* Texte */}
         <div className="ac-hero-text">
-          <div className="ac-hero-pill">🚀 Gestion de files d'attente intelligente</div>
+          <div className="ac-hero-pill">Gestion de files d'attente intelligente</div>
           <h1 className="ac-hero-title">
             Bienvenue sur <span className="ac-hero-title-accent">Jeloft</span>
           </h1>
@@ -176,7 +153,7 @@ export default function Acceuil() {
             </div>
             <div className="ac-modal-body">
               <div className="ac-modal-section">
-                <h3 className="ac-modal-section-title">🎯 Contexte du projet</h3>
+                <h3 className="ac-modal-section-title">Contexte du projet</h3>
                 <p className="ac-modal-text">
                   Jeloft est un outil de gestion de files d'attente. Développé dans le cadre d'un
                   mémoire de fin d'études en Informatique, ce projet propose une solution numérique
@@ -185,7 +162,7 @@ export default function Acceuil() {
                 </p>
               </div>
               <div className="ac-modal-section">
-                <h3 className="ac-modal-section-title">⚙️ Fonctionnalités clés</h3>
+                <h3 className="ac-modal-section-title">Fonctionnalités clés</h3>
                 <ul className="ac-modal-list">
                   {[
                     "Génération et suivi de tickets numériques en temps réel",
@@ -203,7 +180,7 @@ export default function Acceuil() {
                 </ul>
               </div>
               <div className="ac-modal-section">
-                <h3 className="ac-modal-section-title">🛠️ Technologies utilisées</h3>
+                <h3 className="ac-modal-section-title">Technologies utilisées</h3>
                 <div className="ac-tech-row">
                   {["React.js", "Node.js", "Express", "PostgreSQL", "Prisma", "JWT"].map(t => (
                     <span key={t} className="ac-tech-badge">{t}</span>
@@ -211,7 +188,7 @@ export default function Acceuil() {
                 </div>
               </div>
               <div className="ac-modal-section">
-                <h3 className="ac-modal-section-title">👤 Auteur</h3>
+                <h3 className="ac-modal-section-title">Auteur</h3>
                 <p className="ac-modal-text">
                   Projet réalisé par <strong className="ac-author">Joël</strong>. Ce système vise à
                   améliorer la qualité de service dans les structures accueillant du public en

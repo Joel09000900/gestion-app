@@ -1,6 +1,7 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { SocketProvider } from './context/SocketContext';
 import PrivateRoute from './components/PrivateRoute';
 import Inscription from './PAGES/Inscription';
@@ -22,6 +23,7 @@ import AgenceWaves from './PAGES/Services/AgenceWaves';
 
 function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
     <SocketProvider>
     <Router>
@@ -85,6 +87,7 @@ function App() {
     </Router>
     </SocketProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 

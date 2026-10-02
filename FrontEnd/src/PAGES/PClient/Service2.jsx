@@ -3,14 +3,13 @@ import Navbar from '../Navbar/Navbar';
 import './Client.scss';
 import './Service2.scss';
 import React, { useEffect, useRef } from "react";
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaCut, FaCar, FaBuilding, FaMoneyBillWave } from 'react-icons/fa';
 import { GiComb } from 'react-icons/gi';
 import { MdLocalLaundryService } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
+import { useVanta } from '../../hooks/useVanta';
 
 // `adminSeulement` : catégorie visible du seul administrateur. Elle reste
 // desservie par l'API mais n'est proposée ni aux clients ni à l'inscription
@@ -77,37 +76,14 @@ const cardVariant = (delay) => ({
 });
 
 export default function Service2() {
-  const vantaInstance = useRef(null);
-  const vantaRef = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta({ minHeight: 700.0 });
   const navigate  = useNavigate();
   const { user }  = useAuth();
 
   const isAdmin = user?.role === 'ADMIN';
   const services = SERVICES.filter((svc) => !svc.adminSeulement || isAdmin);
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current,
-        THREE,
-        mouseControls: true,
-        touchControls: true,
-        gyroControls: false,
-        minHeight: 700.0,
-        minWidth: 150.0,
-        scale: 1.0,
-        scaleMobile: 1.0,
-        color: 0xffffff,
-        backgroundColor: 0x26266d,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
   return (
     <>

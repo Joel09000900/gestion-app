@@ -20,7 +20,6 @@ export default function ReservationModal({ service, onConfirm, onCancel }) {
 
         {/* En-tête service */}
         <div className="rm-header">
-          <div className="rm-service-icon">{service?.icon ?? "🎫"}</div>
           <div className="rm-service-info">
             <div className="rm-service-nom">{service?.nom ?? "Service"}</div>
             <div className="rm-service-prix">{service?.prix ? `${typeof service.prix === "number" ? service.prix.toLocaleString() : service.prix} F` : ""}</div>
@@ -36,14 +35,12 @@ export default function ReservationModal({ service, onConfirm, onCancel }) {
             className={`rm-mode-btn ${mode === "maintenant" ? "rm-mode-btn--active" : ""}`}
             onClick={() => setMode("maintenant")}
           >
-            <span className="rm-mode-icon">⚡</span>
             <span>Maintenant</span>
           </button>
           <button
             className={`rm-mode-btn ${mode === "planifier" ? "rm-mode-btn--active" : ""}`}
             onClick={() => setMode("planifier")}
           >
-            <span className="rm-mode-icon">📅</span>
             <span>Planifier</span>
           </button>
         </div>

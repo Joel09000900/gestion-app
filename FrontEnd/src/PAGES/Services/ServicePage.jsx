@@ -1,6 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import Navbar from "../Navbar/Navbar";
@@ -9,6 +7,7 @@ import { api } from "../../api";
 import { FaCut, FaCar, FaBuilding, FaMoneyBillWave } from "react-icons/fa";
 import { GiComb } from "react-icons/gi";
 import { MdLocalLaundryService, MdStorefront } from "react-icons/md";
+import { useVanta } from '../../hooks/useVanta';
 
 const AVG_MIN = 7;
 
@@ -44,7 +43,7 @@ const CONFIG = {
 
 // Statuts DB (majuscules) → libellé + classe CSS (suffixes en minuscules)
 const STATUT_META = {
-  EN_ATTENTE_VALIDATION: { label: "⏳ En validation", cls: "en_attente_validation" },
+  EN_ATTENTE_VALIDATION: { label: "En validation", cls: "en_attente_validation" },
   ATTENTE:               { label: "En attente",      cls: "attente" },
   APPELE:                { label: "Appelé",          cls: "appele" },
   TRAITE:                { label: "Traité",          cls: "attente" },
@@ -83,7 +82,6 @@ function ServiceCard({ P, service, selected, onClick }) {
   const prix = fmtPrix(PRICES[service.nom]);
   return (
     <button className={`${P}-service-card ${selected ? `${P}-service-card--selected` : ""}`} onClick={onClick}>
-      <div className={`${P}-service-card__icon`}>{service.icone}</div>
       <div className={`${P}-service-card__nom`}>{service.nom}</div>
       <div className={`${P}-service-card__desc`}>{service.description}</div>
       {prix != null && <div className={`${P}-service-card__prix`}>{prix}</div>}
@@ -112,6 +110,14 @@ function QueueRow({ P, item, isMyTicket, isScanned }) {
 }
 
 function TicketEmis({ P, type, ticket, service, estimate, onReset }) {
+  // Le QR reste volontairement sombre sur clair dans les deux thèmes, et ne
+  // suit donc pas l'inversion. Deux raisons : la librairie écrit ces couleurs
+  // directement dans le SVG (var() n'y serait pas résolu de façon fiable), et
+  // surtout un QR en vidéo inverse — modules clairs sur fond sombre — n'est
+  // lu que par une partie des téléphones. Un ticket qui ne se scanne pas ne
+  // vaut pas une cohérence de palette.
+  const qr = { fond: '#ffffff', trace: '#101014' };
+
   const [secondes, setSecondes] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setSecondes((s) => s + 1), 1000);
@@ -130,14 +136,14 @@ function TicketEmis({ P, type, ticket, service, estimate, onReset }) {
         </span>
       </div>
       <div className={`${P}-ticket-emis__numero`}>{ticket.numero}</div>
-      <div className={`${P}-ticket-emis__service`}>{service?.icone} {service?.nom}</div>
+      <div className={`${P}-ticket-emis__service`}>{service?.nom}</div>
       {fmtPrix(PRICES[service?.nom]) != null && <div className={`${P}-ticket-emis__prix`}>{fmtPrix(PRICES[service?.nom])}</div>}
 
       {e.kind === "validation" ? (
-        <div className="we-validation-msg">⏳ En attente de validation par l'entreprise…</div>
+        <div className="we-validation-msg">En attente de validation par l'entreprise…</div>
       ) : e.kind === "appele" ? (
         <div className="we-appele-msg">
-          🔔 Votre numéro est appelé !<br />
+          Votre numéro est appelé !<br />
           <small>Présentez-vous immédiatement au siège</small>
         </div>
       ) : e.kind === "done" ? (
@@ -169,10 +175,10 @@ function TicketEmis({ P, type, ticket, service, estimate, onReset }) {
             </div>
           )}
           <div className={`we-urgency-msg we-urgency-msg--${e.urgency}`}>
-            {e.urgency === "now"  && "🟢 Vous êtes le prochain !"}
-            {e.urgency === "soon" && "🟡 Préparez-vous, bientôt votre tour"}
-            {e.urgency === "mid"  && "🟠 Encore quelques minutes de patience"}
-            {e.urgency === "wait" && "🔵 Vous pouvez vous éloigner momentanément"}
+            {e.urgency === "now"  && "Vous êtes le prochain !"}
+            {e.urgency === "soon" && "Préparez-vous, bientôt votre tour"}
+            {e.urgency === "mid"  && "Encore quelques minutes de patience"}
+            {e.urgency === "wait" && "Vous pouvez vous éloigner momentanément"}
           </div>
         </div>
       )}
@@ -188,12 +194,12 @@ function TicketEmis({ P, type, ticket, service, estimate, onReset }) {
           <QRCodeSVG
             value={`${window.location.origin}/service/${type}?t=${ticket.numero}`}
             size={112}
-            bgColor="rgba(12,12,55,0.95)"
-            fgColor="#ffffff"
+            bgColor={qr.fond}
+            fgColor={qr.trace}
             level="M"
           />
         </div>
-        <div className="we-qr-hint">📱 Scanner pour suivre votre ticket</div>
+        <div className="we-qr-hint">Scanner pour suivre votre ticket</div>
       </div>
       <div className={`${P}-ticket-emis__actions`}>
         <button className={`${P}-ticket-emis__reset`} onClick={onReset}>↩ Nouveau ticket</button>
@@ -207,8 +213,8 @@ export default function ServicePage({ type }) {
   const cfg = CONFIG[type] ?? CONFIG.coiffure;
   const P = cfg.prefix;
 
-  const vantaRef = useRef(null);
-  const vantaInstance = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta();
   const { socketRef } = useSocket();
   const [searchParams] = useSearchParams();
   const urlTicketNum = searchParams.get("t");
@@ -221,22 +227,6 @@ export default function ServicePage({ type }) {
   const [myTicket, setMyTicket] = useState(null);
   const [notification, setNotif] = useState(null);
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current, THREE,
-        mouseControls: true, touchControls: true, gyroControls: false,
-        minHeight: 800.0, minWidth: 150.0, scale: 1.0, scaleMobile: 1.0,
-        color: 0xffffff, backgroundColor: 0x26266d,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
   const notify = (msg, t = "success") => {
     setNotif({ msg, type: t });
@@ -281,7 +271,7 @@ export default function ServicePage({ type }) {
     refresh();
     const s = socketRef.current;
     const onChange = () => refresh();
-    const events = ["ticket:nouveau", "ticket:valide", "ticket:refuse", "ticket:appele", "ticket:traite", "ticket:absent"];
+    const events = ["ticket:nouveau", "ticket:valide", "ticket:refuse", "ticket:appele", "ticket:traite", "ticket:absent", "tickets:purges"];
     if (s) events.forEach((e) => s.on(e, onChange));
     const poll = setInterval(refresh, 10000);
     return () => {
@@ -366,7 +356,7 @@ export default function ServicePage({ type }) {
                 <div className={`${P}-section__subtitle`}>Synchronisé en temps réel</div>
                 <div className={`${P}-queue-list`}>
                   {queue.length === 0 && (
-                    <div style={{ color: "rgba(255,255,255,.35)", fontSize: ".82rem", padding: "12px 0" }}>Aucun ticket en attente.</div>
+                    <div style={{ color: "rgba(var(--ink-rgb),.35)", fontSize: ".82rem", padding: "12px 0" }}>Aucun ticket en attente.</div>
                   )}
                   {queue.map((item) => (
                     <QueueRow key={item.id} P={P} item={item} isMyTicket={myTicket?.id === item.id} isScanned={item.numero === urlTicketNum} />

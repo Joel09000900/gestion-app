@@ -9,14 +9,14 @@
   width: calc(100% - 3rem);
   max-width: 1100px;
 
-  background: rgba(12, 12, 55, 0.65);
+  background: var(--surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
   border-radius: 16px;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(var(--ink-rgb), 0.1);
 
   position: relative;
   z-index: 100;
@@ -34,10 +34,10 @@
   }
 
   &:hover {
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(var(--ink-rgb), 0.2);
     box-shadow:
       0 12px 40px rgba(0, 0, 0, 0.38),
-      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      inset 0 1px 0 rgba(var(--ink-rgb), 0.15);
   }
 }
 
@@ -53,7 +53,7 @@
   font-weight: 800;
   font-size: 1.05rem;
   letter-spacing: -0.3px;
-  color: #fff;
+  color: var(--ink);
   margin-right: 0.4rem;
   user-select: none;
 
@@ -67,9 +67,9 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+  background: rgba(var(--ink-rgb), 0.07);
+  border: 1px solid rgba(var(--ink-rgb), 0.1);
+  color: rgba(var(--ink-rgb), 0.7);
   text-decoration: none;
   font-size: 0.95rem;
   cursor: pointer;
@@ -112,7 +112,7 @@
   &__name {
     font-size: 0.86rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--ink);
   }
 
   &__role {
@@ -141,13 +141,13 @@
 
   &--outline {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(var(--ink-rgb), 0.18);
+    color: rgba(var(--ink-rgb), 0.8);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.09);
-      border-color: rgba(255, 255, 255, 0.35);
-      color: #fff;
+      background: rgba(var(--ink-rgb), 0.09);
+      border-color: rgba(var(--ink-rgb), 0.35);
+      color: var(--ink);
       transform: translateY(-1px);
     }
   }
@@ -163,6 +163,31 @@
       box-shadow: 0 8px 22px rgba(139, 124, 248, 0.52);
     }
   }
+
+  // Bascule jour / nuit. Même traitement que --outline mais en jetons de thème,
+  // pour qu'il reste lisible dans les deux modes, avec l'icône collée au texte.
+  &--theme {
+    gap: 0.4rem;
+    background: transparent;
+    border: 1px solid rgba(var(--ink-rgb), 0.18);
+    color: rgba(var(--ink-rgb), 0.8);
+
+    &:hover {
+      background: rgba(var(--ink-rgb), 0.09);
+      border-color: rgba(var(--ink-rgb), 0.35);
+      color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    svg { flex-shrink: 0; }
+  }
+}
+
+// Sur petit écran, la bascule se réduit à son icône : le libellé ferait
+// déborder la barre, déjà dense.
+@media (max-width: 600px) {
+  .btn-nav--theme .btn-nav__label { display: none; }
+  .btn-nav--theme { padding: 0.4rem 0.6rem; }
 }
 
 // ── Responsive ──

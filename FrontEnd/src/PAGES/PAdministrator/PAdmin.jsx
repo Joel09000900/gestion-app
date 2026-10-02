@@ -1,19 +1,19 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { MdDeleteOutline } from "react-icons/md";
 import Navbar from "../Navbar/Navbar";
 import { useSocket } from "../../context/SocketContext";
 import { api } from "../../api";
 import "./PAdmin.css";
+import { useVanta } from '../../hooks/useVanta';
 
 // Statuts DB (majuscules) → libellé + classe CSS pour l'affichage admin
 const STATUT_META = {
   TRAITE:                { cls: "traite",  text: "✓ Traité" },
   ABSENT:                { cls: "absent",  text: "⊘ Absent" },
-  ATTENTE:               { cls: "attente", text: "⏳ Attente" },
-  APPELE:                { cls: "attente", text: "🔔 Appelé" },
-  EN_ATTENTE_VALIDATION: { cls: "attente", text: "⏳ Validation" },
+  ATTENTE:               { cls: "attente", text: "Attente" },
+  APPELE:                { cls: "attente", text: "Appelé" },
+  EN_ATTENTE_VALIDATION: { cls: "attente", text: "Validation" },
 };
 
 function fmtHeure(value) {
@@ -96,7 +96,9 @@ function DonutChart({ segments }) {
   return (
     <div className="ad-donut-wrap">
       <svg viewBox="0 0 160 160" className="ad-donut-svg">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+        {/* Les couleurs du donut passent par `style` et non par les attributs
+            SVG : var() y est résolu de façon fiable par tous les navigateurs. */}
+        <circle cx={cx} cy={cy} r={r} fill="none" style={{ stroke: "rgba(var(--ink-rgb),0.08)" }} strokeWidth={stroke} />
         {arcs.map((arc, i) => (
           <circle
             key={i}
@@ -109,9 +111,10 @@ function DonutChart({ segments }) {
             style={{ transition: "stroke-dasharray 0.7s ease" }}
           />
         ))}
-        <text x={cx} y={cy - 6} textAnchor="middle" fill="white" fontSize="26" fontWeight="800"
-          style={{ fontFamily: "'Syne', sans-serif" }}>{total}</text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize="9.5">
+        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="26" fontWeight="800"
+          style={{ fontFamily: "'Syne', sans-serif", fill: "var(--ink)" }}>{total}</text>
+        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="9.5"
+          style={{ fill: "rgba(var(--ink-rgb),0.45)" }}>
           tickets total
         </text>
       </svg>
@@ -165,13 +168,15 @@ function TicketRow({ ticket }) {
 /* ── Page principale ───────────────────────────────────── */
 
 export default function PAdmin() {
-  const vantaRef = useRef(null);
-  const vantaInstance = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta();
   const [activeSection, setActiveSection] = useState("overview");
   const [now, setNow] = useState("");
   const { socketRef } = useSocket();
   const [tickets, setTickets] = useState([]);
   const [loadError, setLoadError] = useState(null);
+  const [purging, setPurging] = useState(false);
+  const [purgeMsg, setPurgeMsg] = useState(null);
 
   const refresh = useCallback(() => {
     return api.get("/tickets/all")
@@ -179,12 +184,38 @@ export default function PAdmin() {
       .catch((err) => setLoadError(err.message || "Erreur de chargement des tickets"));
   }, []);
 
+  // Purge globale réservée à l'admin : supprime tous les tickets de la
+  // plateforme et l'historique des transactions (table Action), puis remet les
+  // compteurs de numérotation à zéro. Irréversible — d'où la confirmation.
+  const handlePurge = async () => {
+    const msg =
+      `Supprimer définitivement les ${tickets.length} ticket(s) de la plateforme ` +
+      `et tout l'historique des transactions ?\n\n` +
+      `La numérotation repartira de A1. Cette action est irréversible.`;
+    if (!window.confirm(msg)) return;
+
+    setPurging(true);
+    try {
+      const res = await api.delete("/tickets/all");
+      setPurgeMsg(
+        `${res?.tickets ?? 0} ticket(s) et ${res?.actions ?? 0} action(s) supprimés — ` +
+        `${res?.compteursRemisAZero ?? 0} compteur(s) remis à zéro.`
+      );
+      await refresh();
+    } catch (err) {
+      setPurgeMsg(`Échec de la purge : ${err.message}`);
+    } finally {
+      setPurging(false);
+      setTimeout(() => setPurgeMsg(null), 6000);
+    }
+  };
+
   // Chargement initial + temps réel (socket) + polling de secours
   useEffect(() => {
     refresh();
     const s = socketRef.current;
     const onChange = () => refresh();
-    const events = ["ticket:nouveau", "ticket:valide", "ticket:refuse", "ticket:appele", "ticket:traite", "ticket:absent"];
+    const events = ["ticket:nouveau", "ticket:valide", "ticket:refuse", "ticket:appele", "ticket:traite", "ticket:absent", "tickets:purges"];
     if (s) events.forEach((e) => s.on(e, onChange));
     const poll = setInterval(refresh, 12000);
     return () => {
@@ -193,22 +224,6 @@ export default function PAdmin() {
     };
   }, [refresh, socketRef]);
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current, THREE,
-        mouseControls: true, touchControls: true, gyroControls: false,
-        minHeight: 800.0, minWidth: 150.0, scale: 1.0, scaleMobile: 1.0,
-        color: 0xffffff, backgroundColor: 0x26266d,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const tick = () => {
@@ -361,17 +376,29 @@ export default function PAdmin() {
             </div>
             <div className="ad-date-chip">{now}</div>
             <Link to="/Service2" className="ad-rapport-btn" title="Choisir un service et prendre un ticket comme un client">
-              🎫 Prendre un ticket
+              Prendre un ticket
             </Link>
             <button className="ad-rapport-btn" onClick={downloadRapport} title="Télécharger le rapport">
-              ⬇ Rapport
+              Rapport
+            </button>
+            <button
+              className="ad-rapport-btn ad-rapport-btn--danger"
+              onClick={handlePurge}
+              disabled={purging || tickets.length === 0}
+              title="Supprimer tous les tickets et l'historique des transactions"
+            >
+              <MdDeleteOutline size={15} /> {purging ? "Suppression…" : "Vider l'historique"}
             </button>
           </div>
         </nav>
 
+        {purgeMsg && (
+          <div className="ad-error-banner" role="status">{purgeMsg}</div>
+        )}
+
         {loadError && (
           <div className="ad-error-banner" role="alert">
-            ⚠️ Impossible de charger les tickets : {loadError}
+            Impossible de charger les tickets : {loadError}
             <button className="ad-error-retry" onClick={refresh}>Réessayer</button>
           </div>
         )}
@@ -396,7 +423,7 @@ export default function PAdmin() {
                 <div className="ad-panel">
                   <div className="ad-panel__title">Répartition par service</div>
                   {serviceStats.length === 0 ? (
-                    <div style={{ color:"rgba(255,255,255,.35)", fontSize:".82rem", paddingTop:"8px" }}>
+                    <div style={{ color:"rgba(var(--ink-rgb),.35)", fontSize:".82rem", paddingTop:"8px" }}>
                       Aucun ticket émis pour le moment.
                     </div>
                   ) : (
@@ -433,7 +460,7 @@ export default function PAdmin() {
               <div className="ad-panel">
                 <div className="ad-panel__title">Activité récente — tous services</div>
                 {recentTickets.length === 0 ? (
-                  <div style={{ color:"rgba(255,255,255,.35)", fontSize:".82rem" }}>
+                  <div style={{ color:"rgba(var(--ink-rgb),.35)", fontSize:".82rem" }}>
                     Aucun ticket enregistré. Les tickets apparaîtront ici dès qu'un client en prendra un.
                   </div>
                 ) : (
@@ -512,7 +539,7 @@ export default function PAdmin() {
               <div className="ad-panel">
                 <div className="ad-panel__title">Performance par service</div>
                 {serviceStats.length === 0 ? (
-                  <div style={{ color:"rgba(255,255,255,.35)", fontSize:".82rem" }}>
+                  <div style={{ color:"rgba(var(--ink-rgb),.35)", fontSize:".82rem" }}>
                     Aucune donnée de service disponible.
                   </div>
                 ) : (
@@ -566,7 +593,7 @@ export default function PAdmin() {
                   </button>
                 </div>
                 {tickets.length === 0 ? (
-                  <div style={{ color:"rgba(255,255,255,.35)", fontSize:".82rem" }}>
+                  <div style={{ color:"rgba(var(--ink-rgb),.35)", fontSize:".82rem" }}>
                     Aucun ticket enregistré pour le moment.
                   </div>
                 ) : (

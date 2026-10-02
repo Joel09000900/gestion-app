@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { prendreTicket, mesTickets, tousLesTicketsAdmin, supprimerHistorique, supprimerTicket, fileAttente, appelTicket, terminerTicket, validerTicket, refuserTicket } from '../controllers/tickets.controller.js';
+import { prendreTicket, mesTickets, tousLesTicketsAdmin, supprimerHistorique, purgerToutAdmin, purgerHistoriqueEntreprise, supprimerTicket, fileAttente, appelTicket, terminerTicket, validerTicket, refuserTicket } from '../controllers/tickets.controller.js';
 import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -8,6 +8,10 @@ router.post('/', requireAuth, prendreTicket);
 router.get('/mes-tickets', requireAuth, mesTickets);
 router.get('/all', requireAuth, requireRole('ADMIN'), tousLesTicketsAdmin);
 router.delete('/historique', requireAuth, supprimerHistorique);
+// Les deux purges sont déclarées avant '/:id', sinon Express lirait « all »
+// comme un identifiant de ticket et la requête tomberait sur supprimerTicket.
+router.delete('/all', requireAuth, requireRole('ADMIN'), purgerToutAdmin);
+router.delete('/entreprise/historique', requireAuth, requireRole('ENTREPRISE', 'ADMIN'), purgerHistoriqueEntreprise);
 router.delete('/:id', requireAuth, supprimerTicket);
 router.get('/file/:serviceId', fileAttente);
 router.patch('/:id/valider', requireAuth, requireRole('ENTREPRISE', 'ADMIN'), validerTicket);

@@ -2,9 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import './Inscription.scss';
 import Navbar from './Navbar/Navbar';
-import React, { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUser, AiOutlineMail, AiOutlineUserAdd, AiOutlineIdcard, AiOutlineShop, AiOutlineLock, AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { FaCut, FaCar } from 'react-icons/fa';
@@ -12,6 +10,7 @@ import { GiComb } from 'react-icons/gi';
 import { MdLocalLaundryService } from 'react-icons/md';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useVanta } from '../hooks/useVanta';
 
 /* Email valide : du texte, un @, un domaine, un point, une extension. */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,32 +20,9 @@ function Inscription() {
   const navigate = useNavigate();
 
   /* ── Vanta background ── */
-  const vantaInstance = useRef(null);
-  const vantaRef = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta();
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current,
-        THREE,
-        mouseControls: true,
-        touchControls: true,
-        gyroControls: false,
-        minHeight: 800.0,
-        minWidth: 150.0,
-        scale: 1.0,
-        scaleMobile: 1.0,
-        color: 0xffffff,
-        backgroundColor: 0x26266d,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
   /* ── Choix du rôle ── */
   const [role, setRole] = useState(null); // null | 'client' | 'entreprise'
@@ -266,9 +242,9 @@ function Inscription() {
                             style={{
                               display: 'flex', alignItems: 'center', gap: '6px',
                               padding: '8px 12px', borderRadius: '10px', cursor: 'pointer',
-                              fontSize: '.85rem', color: '#fff',
-                              background: selected ? 'linear-gradient(135deg, #6c63ff, #4fc3f7)' : 'rgba(255,255,255,0.07)',
-                              border: selected ? '1px solid transparent' : '1px solid rgba(255,255,255,0.2)',
+                              fontSize: '.85rem', color: selected ? '#fff' : 'var(--ink)',
+                              background: selected ? 'linear-gradient(135deg, #6c63ff, #4fc3f7)' : 'rgba(var(--ink-rgb),0.07)',
+                              border: selected ? '1px solid transparent' : '1px solid rgba(var(--ink-rgb),0.2)',
                               transition: 'all .2s ease',
                             }}
                           >

@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
 import { useNavigate } from "react-router-dom";
 import { MdPhotoCamera, MdArrowForward, MdReceiptLong, MdOpenInNew, MdLocationOn, MdDeleteOutline, MdWarningAmber } from "react-icons/md";
 import Navbar from "../Navbar/Navbar";
@@ -8,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import "./DashbordClient.scss";
 import { api } from "../../api";
+import { useVanta } from '../../hooks/useVanta';
 
 function resizeImage(file, maxSize = 256) {
   return new Promise((resolve) => {
@@ -62,7 +61,6 @@ function TicketRow({ ticket, onDelete }) {
       <div className="cl-ticket-row__num">{ticket.numero}</div>
       <div className="cl-ticket-row__info">
         <span className="cl-ticket-row__service">
-          {ticket.service?.icone && <span>{ticket.service.icone} </span>}
           {ticket.service?.nom ?? "Service"}
         </span>
         <span className="cl-ticket-row__date">{formatDateTime(ticket.createdAt)}</span>
@@ -106,7 +104,7 @@ function ActiveTicketCard({ ticket, onDelete }) {
 
       {!isValidated ? (
         <div className="cl-active-card__pending">
-          <span className="cl-active-card__pending-title">⏳ En attente de validation</span>
+          <span className="cl-active-card__pending-title">En attente de validation</span>
           <span className="cl-active-card__pending-sub">
             Les informations de l'entreprise (nom, photo, localisation) s'afficheront une fois votre ticket validé.
           </span>
@@ -124,7 +122,7 @@ function ActiveTicketCard({ ticket, onDelete }) {
               <div className="cl-active-card__ent-info">
                 <span className="cl-active-card__ent-nom">{ent.nom}</span>
                 <span className="cl-active-card__ent-service">
-                  {ticket.service?.icone} {ticket.service?.nom}
+                  {ticket.service?.nom}
                 </span>
               </div>
             </div>
@@ -166,8 +164,8 @@ export default function DashbordClient() {
   const { user, updateUser, logout } = useAuth();
   const { socketRef } = useSocket();
   const navigate = useNavigate();
-  const vantaRef = useRef(null);
-  const vantaInstance = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta();
   const fileInputRef = useRef(null);
 
   const [uploading, setUploading] = useState(false);
@@ -190,7 +188,7 @@ export default function DashbordClient() {
     const s = socketRef.current;
     if (!s) return;
     const onChange = () => loadTickets();
-    const events = ["ticket:valide", "ticket:refuse", "ticket:appele", "ticket:traite", "ticket:absent"];
+    const events = ["ticket:valide", "ticket:refuse", "ticket:appele", "ticket:traite", "ticket:absent", "tickets:purges"];
     events.forEach((e) => s.on(e, onChange));
     const poll = setInterval(loadTickets, 12000);
     return () => {
@@ -199,22 +197,6 @@ export default function DashbordClient() {
     };
   }, [loadTickets, socketRef]);
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current, THREE,
-        mouseControls: true, touchControls: true, gyroControls: false,
-        minHeight: 800.0, minWidth: 150.0, scale: 1.0, scaleMobile: 1.0,
-        color: 0xffffff, backgroundColor: 0x26266d,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
@@ -324,7 +306,6 @@ export default function DashbordClient() {
 
           {/* Lien vers la page services */}
           <button className="cl-service-link" onClick={() => navigate("/Service2")}>
-            <span className="cl-service-link__icon">🎫</span>
             <div className="cl-service-link__text">
               <span className="cl-service-link__title">Prendre un ticket</span>
               <span className="cl-service-link__sub">Choisir un service et rejoindre la file</span>

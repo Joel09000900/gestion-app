@@ -64,7 +64,7 @@ model Service {
   id          String @id @default(cuid())
   nom         String
   prefixe     String
-  icone       String @default("🏦")
+  icone       String @default("")
   description String @default("")
   compteur    Int    @default(0)
   entrepriseId String

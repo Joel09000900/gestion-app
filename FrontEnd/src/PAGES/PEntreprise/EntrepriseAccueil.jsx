@@ -2,11 +2,10 @@
 import Navbar from '../Navbar/Navbar';
 import './EntrepriseAccueil.scss';
 import React, { useEffect, useRef } from "react";
-import * as THREE from "three";
-import NET from "vanta/dist/vanta.net.min";
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AiOutlineShop } from 'react-icons/ai';
+import { useVanta } from '../../hooks/useVanta';
 
 const ORB_PULSE = {
   animate: {
@@ -28,33 +27,10 @@ const card = (delay) => ({
 });
 
 export default function EntrepriseAccueil() {
-  const vantaInstance = useRef(null);
-  const vantaRef = useRef(null);
+  // Fond anime Vanta : couleurs pilotees par le theme (cf. useVanta).
+  const vantaRef = useVanta();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!vantaInstance.current) {
-      vantaInstance.current = NET({
-        el: vantaRef.current,
-        THREE,
-        mouseControls: true,
-        touchControls: true,
-        gyroControls: false,
-        minHeight: 800.0,
-        minWidth: 150.0,
-        scale: 1.0,
-        scaleMobile: 1.0,
-        color: 0xffffff,
-        backgroundColor: 0x26266d,
-      });
-    }
-    return () => {
-      if (vantaInstance.current) {
-        vantaInstance.current.destroy();
-        vantaInstance.current = null;
-      }
-    };
-  }, []);
 
   return (
     <>

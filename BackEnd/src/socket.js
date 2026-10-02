@@ -65,3 +65,10 @@ export function diffuser(event, ticket) {
     serviceId: ticket.serviceId,
   });
 }
+
+// Diffusion d'une suppression en masse. Il n'y a pas un ticket à désigner mais
+// une portée (plateforme ou entreprise) : les écrans ouverts rechargent leur
+// liste au lieu de retirer une ligne. Aucun identifiant de porteur ne circule.
+export function diffuserPurge(portee) {
+  io?.to('jeloft:queue').emit('tickets:purges', portee);
+}

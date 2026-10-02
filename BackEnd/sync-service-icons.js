@@ -1,32 +1,44 @@
-// Utilitaire admin — resynchronise le champ `icone` des services déjà en base
-// avec les valeurs actuelles de data/servicesCatalog.js.
+// Utilitaire admin — vide le champ `icone` des services déjà en base.
 //
-// Nécessaire car les services sont copiés en base une seule fois, à la création
-// du compte entreprise (voir auth.controller.js) : modifier servicesCatalog.js
-// ne met à jour que les nouveaux comptes, pas les services déjà existants.
+// Les pictogrammes emoji ont été retirés de l'interface : identité visuelle
+// sobre, attendue d'un outil professionnel. Le catalogue
+// (data/servicesCatalog.js) n'en porte donc plus, et la colonne `icone` a pour
+// défaut la chaîne vide.
+//
+// Ce script traite les services créés AVANT ce changement : ils sont copiés en
+// base une seule fois, à la création du compte entreprise (voir
+// auth.controller.js), donc modifier le catalogue ne touche que les nouveaux
+// comptes.
+//
+// La colonne est conservée (vide) plutôt que supprimée : aucune migration
+// destructive, et le jour où des pictogrammes vectoriels seraient réintroduits
+// le champ est déjà là.
 //
 // Usage : node sync-service-icons.js
-// Cible la BD définie par DATABASE_URL dans .env.
+// Cible la BD définie par DATABASE_URL dans .env. Idempotent.
 
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { SERVICES_BY_TYPE } from './src/data/servicesCatalog.js';
 
 const prisma = new PrismaClient();
 
 async function run() {
-  const catalogue = Object.values(SERVICES_BY_TYPE).flat();
-  let total = 0;
+  const aVider = await prisma.service.count({ where: { NOT: { icone: '' } } });
 
-  for (const { nom, icone } of catalogue) {
-    const { count } = await prisma.service.updateMany({
-      where: { nom, icone: { not: icone } },
-      data: { icone },
-    });
-    if (count > 0) console.log(`✔ ${nom} → ${icone} (${count} service(s) mis à jour)`);
-    total += count;
+  if (aVider === 0) {
+    console.log('Aucune icône en base — rien à faire.');
+    return;
   }
 
-  console.log(total > 0 ? `\n📦 ${total} service(s) resynchronisé(s).` : '\nRien à mettre à jour, déjà à jour.');
+  const { count } = await prisma.service.updateMany({
+    where: { NOT: { icone: '' } },
+    data: { icone: '' },
+  });
+
+  console.log(`✔ ${count} service(s) dont l'icône a été vidée.`);
+
+  const reste = await prisma.service.count({ where: { NOT: { icone: '' } } });
+  console.log(`Vérification : ${reste} service(s) portent encore une icône.`);
 }
 
 run()

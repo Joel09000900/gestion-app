@@ -8,6 +8,7 @@
 // Usage : node migrate-tresseuses-services.js
 // Cible la BD définie par DATABASE_URL dans .env.
 
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

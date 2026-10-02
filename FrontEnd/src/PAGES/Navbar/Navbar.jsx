@@ -2,11 +2,15 @@ import React from 'react'
 import './Navbar.scss';
 import { Link, useNavigate } from 'react-router-dom';
 import { AiFillHome, AiOutlineUser } from 'react-icons/ai';
+import { MdDarkMode, MdLightMode } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Navbar({ onAbout }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, basculer } = useTheme();
+  const enNuit = theme === 'nuit';
 
   const handleLogout = () => {
     logout();
@@ -30,6 +34,19 @@ export default function Navbar({ onAbout }) {
         </div>
       )}
       <div className="nav-right">
+        {/* Bascule jour / nuit — disponible connecté ou non, sur toutes les pages. */}
+        <button
+          type="button"
+          className="btn-nav btn-nav--theme"
+          onClick={basculer}
+          title={enNuit ? 'Passer en mode jour' : 'Passer en mode nuit'}
+          aria-label={enNuit ? 'Passer en mode jour' : 'Passer en mode nuit'}
+          aria-pressed={!enNuit}
+        >
+          {enNuit ? <MdLightMode size={15} /> : <MdDarkMode size={15} />}
+          <span className="btn-nav__label">{enNuit ? 'Mode jour' : 'Mode nuit'}</span>
+        </button>
+
         {user ? (
           <>
             <div className="nav-user">
