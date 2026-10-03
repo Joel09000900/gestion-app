@@ -16,9 +16,9 @@ import { useTheme } from '../context/ThemeContext';
 const COULEURS = {
   // Filet blanc sur fond noir.
   nuit: { backgroundColor: 0x000000, color: 0xffffff },
-  // Fond blanc, filet violet — le violet d'accent du projet (#8b7cf8, celui du
-  // logo et des boutons pleins), qui reste lisible sur blanc.
-  jour: { backgroundColor: 0xffffff, color: 0x8b7cf8 },
+  // Filet noir sur fond blanc : l'inverse exact du mode nuit. Vanta repère
+  // seul qu'un trait plus sombre que le fond se dessine en soustractif.
+  jour: { backgroundColor: 0xffffff, color: 0x000000 },
 };
 
 const DEFAUTS = {

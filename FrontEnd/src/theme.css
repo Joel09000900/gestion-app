@@ -5,7 +5,7 @@
    Parti pris : les SECTIONS SONT NOIRES DANS LES DEUX THÈMES. Seuls le fond
    de page et le filet Vanta changent.
      mode nuit → fond noir,  filet blanc,  sections noires, texte clair dedans
-     mode jour → fond blanc, filet violet, sections noires, texte clair dedans
+     mode jour → fond blanc, filet noir,   sections noires, texte clair dedans
 
    En mode nuit, des sections noires sur un fond noir ne tiennent que par deux
    choses : leur bordure claire, et le fait qu'elles masquent le filet animé
@@ -55,7 +55,7 @@
 
 :root[data-theme="jour"] {
   /* Seuls le fond de page et son encre basculent. Les sections restent noires,
-     le filet Vanta passe au violet (cf. hooks/useVanta.js). */
+     le filet Vanta passe au noir (cf. hooks/useVanta.js). */
   --bg:               #ffffff;
 
   --ink:              #101014;
@@ -90,6 +90,7 @@ body {
    substituée avec l'encre du fond de page. Les recalculer ici est le seul
    moyen de les faire suivre l'encre de section. */
 .rm-modal,
+.ac-modal,
 .glass-card,
 .nav-bar,
 .ad-header,

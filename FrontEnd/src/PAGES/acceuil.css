@@ -4,13 +4,39 @@
    Reconstruction des styles ac-* (sur fond Vanta, couleur pilotee par le theme)
    ============================================================ */
 .ac-root {
+  /* Encres des textes posés sur le fond de page : teintées bleu-violet en mode
+     nuit, foncées en mode jour (fond blanc, filet noir — cf. theme.css et
+     hooks/useVanta.js). La modale À propos reste sombre dans les deux thèmes :
+     elle garde ses couleurs littérales et l'encre de section de theme.css. */
+  --ac-ink: #eef1ff;
+  --ac-pill-ink: #eef1ff;
+  --ac-desc: #c4c9ee;
+  --ac-label: #8a90c4;
+  --ac-space-desc: #b9bee6;
+  --ac-feat-desc: #aab0dd;
+  --ac-cyan: #4fc3f7;
+  --ac-purple: #b39dff;
+  --ac-pink: #e07bff;
   position: relative;
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
-  color: #eef1ff;
+  color: var(--ac-ink);
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   background: var(--bg); /* repli si Vanta ne charge pas */
+}
+
+/* Mode jour : contraste ≥ 4.5:1 sur blanc pour chaque encre. */
+:root[data-theme=jour] .ac-root {
+  --ac-ink: #101014;
+  --ac-pill-ink: #3d35c9;
+  --ac-desc: #3e4257;
+  --ac-label: #5b6080;
+  --ac-space-desc: #4a4f6a;
+  --ac-feat-desc: #555a75;
+  --ac-cyan: #0a78b0;
+  --ac-purple: #5b45e0;
+  --ac-pink: #a12bc4;
 }
 
 /* Le canvas injecté par Vanta passe en fond, le contenu au-dessus */
@@ -70,6 +96,7 @@
   border-radius: 999px;
   background: rgba(108, 99, 255, 0.18);
   border: 1px solid rgba(108, 99, 255, 0.4);
+  color: var(--ac-pill-ink);
   font-size: 0.85rem;
   margin-bottom: 1.2rem;
 }
@@ -91,7 +118,7 @@
 .ac-hero-desc {
   font-size: 1.05rem;
   line-height: 1.7;
-  color: #c4c9ee;
+  color: var(--ac-desc);
   max-width: 560px;
   margin: 0 0 1.8rem;
 }
@@ -102,12 +129,12 @@
 }
 
 .ac-hl-cyan {
-  color: #4fc3f7;
+  color: var(--ac-cyan);
   font-weight: 600;
 }
 
 .ac-hl-purple {
-  color: #b39dff;
+  color: var(--ac-purple);
   font-weight: 600;
 }
 
@@ -144,7 +171,7 @@
 }
 
 .ac-btn-outline {
-  color: #eef1ff;
+  color: var(--ac-ink);
   background: rgba(var(--ink-rgb), 0.06);
   border-color: rgba(var(--ink-rgb), 0.25);
 }
@@ -165,7 +192,7 @@
 .ac-section-label {
   font-size: 0.8rem;
   letter-spacing: 3px;
-  color: #8a90c4;
+  color: var(--ac-label);
   margin-bottom: 2rem;
 }
 
@@ -227,7 +254,7 @@
 .ac-space-desc {
   font-size: 0.92rem;
   line-height: 1.6;
-  color: #b9bee6;
+  color: var(--ac-space-desc);
   margin: 0;
   flex-grow: 1;
 }
@@ -239,15 +266,15 @@
 }
 
 .ac-spbtn-client {
-  color: #4fc3f7;
+  color: var(--ac-cyan);
 }
 
 .ac-spbtn-entreprise {
-  color: #b39dff;
+  color: var(--ac-purple);
 }
 
 .ac-spbtn-admin {
-  color: #e07bff;
+  color: var(--ac-pink);
 }
 
 /* ── FEATURES ─────────────────────────────────────────── */
@@ -313,7 +340,7 @@
 .ac-feat-desc {
   font-size: 0.88rem;
   line-height: 1.55;
-  color: #aab0dd;
+  color: var(--ac-feat-desc);
 }
 
 /* ── MODALE À PROPOS ──────────────────────────────────── */
