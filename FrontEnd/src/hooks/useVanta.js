@@ -54,13 +54,21 @@ export function useVanta(options = {}) {
     // se superposeraient et l'ancien garderait les couleurs du thème précédent.
     conteneur.querySelectorAll('canvas.vanta-canvas').forEach((c) => c.remove());
 
-    instance.current = NET({
+    const config = {
       el: conteneur,
       THREE,
       ...DEFAUTS,
       ...COULEURS[theme === 'jour' ? 'jour' : 'nuit'],
       ...reglages,
-    });
+    };
+    instance.current = NET(config);
+
+    // Vanta 0.5 crée le matériau des traits avec `THREE.VertexColors`, retiré de
+    // three depuis r126 : la couleur par sommet est ignorée et les traits
+    // sortent du blanc par défaut du matériau, quel que soit `color`. Invisible
+    // en mode nuit (blanc voulu), mais un filet blanc sur fond blanc en mode
+    // jour. On impose donc la couleur au matériau lui-même.
+    instance.current?.linesMesh?.material?.color.set(config.color);
 
     return () => {
       instance.current?.destroy();
