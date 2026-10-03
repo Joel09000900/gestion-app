@@ -131,17 +131,6 @@ export default function Acceuil() {
       </section> 
 
 
-      {/* ══ FEATURES ══ */}
-      <section className="ac-feat-section">
-        {FEATURES.map((f) => (
-          <div key={f.label} className="ac-feat-item">
-            <div className={`ac-feat-icon ${f.iconClass}`}>{f.icon}</div>
-            <div className="ac-feat-label">{f.label}</div>
-            <div className="ac-feat-desc">{f.desc}</div>
-          </div>
-        ))}
-      </section>
-
       {/* ══ MODALE À PROPOS ══ */}
       {aboutOpen && (
         <div className="ac-modal-overlay" onClick={() => setAboutOpen(false)}>
@@ -202,19 +191,3 @@ export default function Acceuil() {
     </div>
   );
 }
-
-const FEATURES = [
-  {
-    label: "Multi-Services",
-    desc: "Gestion simultanée de multiples services et points d'accueil",
-    iconClass: "ac-feat-icon--multi",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    ),
-  },
-];

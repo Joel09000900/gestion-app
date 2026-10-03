@@ -13,7 +13,6 @@
   --ac-desc:       #c4c9ee;
   --ac-label:      #8a90c4;
   --ac-space-desc: #b9bee6;
-  --ac-feat-desc:  #aab0dd;
   --ac-cyan:       #4fc3f7;
   --ac-purple:     #b39dff;
   --ac-pink:       #e07bff;
@@ -34,7 +33,6 @@
   --ac-desc:       #3e4257;
   --ac-label:      #5b6080;
   --ac-space-desc: #4a4f6a;
-  --ac-feat-desc:  #555a75;
   --ac-cyan:       #0a78b0;
   --ac-purple:     #5b45e0;
   --ac-pink:       #a12bc4;
@@ -193,6 +191,20 @@
   gap: 1.6rem;
 }
 
+/* Carte noire dans les deux thèmes : seul le filet Vanta suit le thème. Sur le
+   fond blanc du mode jour, une carte au fond translucide sombre et aux encres
+   foncées devenait illisible ; le noir la rend identique au mode nuit.
+
+   D'où les deux blocs de variables ci-dessous :
+   - --ink / --ink-rgb : l'encre de surface de theme.css, pour que la bordure et
+     les effets de survol de la carte restent clairs sur son fond noir.
+   - --ac-* : les encres de l'accueil sont foncées en mode jour car elles sont
+     prévues pour le fond blanc de la page. Dans la carte il faut les valeurs
+     claires du mode nuit, redéclarées ici — pour une propriété personnalisée,
+     la déclaration de l'ancêtre le plus proche gagne.
+   `color` passe de `inherit` à `var(--ac-ink)` : `inherit` aurait copié la
+   couleur déjà calculée du parent (foncée en mode jour) sans relire la
+   variable, et le titre de la carte serait resté noir sur noir. */
 .ac-space-card {
   display: flex;
   flex-direction: column;
@@ -201,12 +213,21 @@
   gap: 0.8rem;
   padding: 2rem 0.7rem;
   border-radius: 18px;
-  background: rgba(var(--ink-rgb), 0.06);
+  background: #000;
   backdrop-filter: blur(14px);
   border: 1px solid rgba(var(--ink-rgb), 0.12);
   text-decoration: none;
-  color: inherit;
+  color: var(--ac-ink);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+
+  --ink:     var(--surface-ink);
+  --ink-rgb: var(--surface-ink-rgb);
+
+  --ac-ink:        #eef1ff;
+  --ac-space-desc: #b9bee6;
+  --ac-cyan:       #4fc3f7;
+  --ac-purple:     #b39dff;
+  --ac-pink:       #e07bff;
 }
 
 .ac-space-card:hover {
@@ -251,68 +272,6 @@
 .ac-spbtn-client     { color: var(--ac-cyan); }
 .ac-spbtn-entreprise { color: var(--ac-purple); }
 .ac-spbtn-admin      { color: var(--ac-pink); }
-
-/* ── FEATURES ─────────────────────────────────────────── */
-.ac-feat-section {
-  display: flex;
-  justify-content: center;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 1rem 1.5rem 5rem;
-}
-
-.ac-feat-item {
-  position: relative;
-  text-align: center;
-  width: 100%;
-  max-width: 320px;
-  padding: 1.8rem 1.4rem;
-  border-radius: 16px;
-  background: rgba(var(--ink-rgb), 0.12);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(var(--ink-rgb), 0.18);
-  transition: transform 0.25s ease, box-shadow 0.25s ease,
-              border-color 0.25s ease, background 0.25s ease;
-  animation: ac-feat-border 4s ease-in-out infinite;
-}
-
-.ac-feat-item:hover {
-  transform: translateY(-6px);
-  background: rgba(var(--ink-rgb), 0.16);
-  border-color: rgba(108, 99, 255, 0.65);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35), 0 0 22px rgba(108, 99, 255, 0.35);
-  animation-play-state: paused;
-}
-
-@keyframes ac-feat-border {
-  0%, 100% { border-color: rgba(var(--ink-rgb), 0.18); }
-  50%      { border-color: rgba(108, 99, 255, 0.5); }
-}
-
-.ac-feat-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-}
-
-.ac-feat-icon--multi     { background: linear-gradient(135deg, #ab47bc, #6c63ff); }
-
-.ac-feat-label {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin-bottom: 0.4rem;
-}
-
-.ac-feat-desc {
-  font-size: 0.88rem;
-  line-height: 1.55;
-  color: var(--ac-feat-desc);
-}
 
 /* ── MODALE À PROPOS ──────────────────────────────────── */
 .ac-modal-overlay {
